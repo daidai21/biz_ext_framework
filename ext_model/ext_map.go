@@ -2,22 +2,27 @@ package ext_model
 
 import "sync"
 
-// ExtMap is a generic, concurrency-safe map wrapper for business extensions.
-// The zero value is ready to use.
-type ExtMap[K comparable, V any] struct {
-	mu   sync.RWMutex
-	data map[K]V
+// ExtObj defines the value contract stored in ExtMap.
+type ExtObj interface {
+	any
 }
 
-func NewExtMap[K comparable, V any](initial map[K]V) *ExtMap[K, V] {
-	m := &ExtMap[K, V]{}
+// ExtMap is a generic, concurrency-safe map wrapper for business extensions.
+// The zero value is ready to use.
+type ExtMap[V ExtObj] struct {
+	mu   sync.RWMutex
+	data map[string]V
+}
+
+func NewExtMap[V ExtObj](initial map[string]V) *ExtMap[V] {
+	m := &ExtMap[V]{}
 	if len(initial) > 0 {
 		m.data = cloneMap(initial)
 	}
 	return m
 }
 
-func (m *ExtMap[K, V]) Set(key K, value V) {
+func (m *ExtMap[V]) Set(key string, value V) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -25,7 +30,7 @@ func (m *ExtMap[K, V]) Set(key K, value V) {
 	m.data[key] = value
 }
 
-func (m *ExtMap[K, V]) Get(key K) (V, bool) {
+func (m *ExtMap[V]) Get(key string) (V, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -38,12 +43,12 @@ func (m *ExtMap[K, V]) Get(key K) (V, bool) {
 	return value, ok
 }
 
-func (m *ExtMap[K, V]) Has(key K) bool {
+func (m *ExtMap[V]) Has(key string) bool {
 	_, ok := m.Get(key)
 	return ok
 }
 
-func (m *ExtMap[K, V]) Delete(key K) (V, bool) {
+func (m *ExtMap[V]) Delete(key string) (V, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -60,21 +65,21 @@ func (m *ExtMap[K, V]) Delete(key K) (V, bool) {
 	return value, ok
 }
 
-func (m *ExtMap[K, V]) Len() int {
+func (m *ExtMap[V]) Len() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	return len(m.data)
 }
 
-func (m *ExtMap[K, V]) Clear() {
+func (m *ExtMap[V]) Clear() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	clear(m.data)
 }
 
-func (m *ExtMap[K, V]) LoadOrStore(key K, value V) (V, bool) {
+func (m *ExtMap[V]) LoadOrStore(key string, value V) (V, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -89,7 +94,7 @@ func (m *ExtMap[K, V]) LoadOrStore(key K, value V) (V, bool) {
 	return value, false
 }
 
-func (m *ExtMap[K, V]) Range(fn func(key K, value V) bool) {
+func (m *ExtMap[V]) Range(fn func(key string, value V) bool) {
 	snapshot := m.Clone()
 	for key, value := range snapshot {
 		if !fn(key, value) {
@@ -98,18 +103,18 @@ func (m *ExtMap[K, V]) Range(fn func(key K, value V) bool) {
 	}
 }
 
-func (m *ExtMap[K, V]) Keys() []K {
+func (m *ExtMap[V]) Keys() []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	keys := make([]K, 0, len(m.data))
+	keys := make([]string, 0, len(m.data))
 	for key := range m.data {
 		keys = append(keys, key)
 	}
 	return keys
 }
 
-func (m *ExtMap[K, V]) Values() []V {
+func (m *ExtMap[V]) Values() []V {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -120,7 +125,7 @@ func (m *ExtMap[K, V]) Values() []V {
 	return values
 }
 
-func (m *ExtMap[K, V]) Merge(other map[K]V) {
+func (m *ExtMap[V]) Merge(other map[string]V) {
 	if len(other) == 0 {
 		return
 	}
@@ -134,25 +139,25 @@ func (m *ExtMap[K, V]) Merge(other map[K]V) {
 	}
 }
 
-func (m *ExtMap[K, V]) Clone() map[K]V {
+func (m *ExtMap[V]) Clone() map[string]V {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	return cloneMap(m.data)
 }
 
-func (m *ExtMap[K, V]) ensureData() {
+func (m *ExtMap[V]) ensureData() {
 	if m.data == nil {
-		m.data = make(map[K]V)
+		m.data = make(map[string]V)
 	}
 }
 
-func cloneMap[K comparable, V any](source map[K]V) map[K]V {
+func cloneMap[V ExtObj](source map[string]V) map[string]V {
 	if len(source) == 0 {
-		return map[K]V{}
+		return map[string]V{}
 	}
 
-	target := make(map[K]V, len(source))
+	target := make(map[string]V, len(source))
 	for key, value := range source {
 		target[key] = value
 	}
