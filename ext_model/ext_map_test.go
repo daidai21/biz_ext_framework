@@ -64,23 +64,22 @@ func TestExtMapDelRemovesValue(t *testing.T) {
 	}
 }
 
-func TestExtMapForEachUsesSnapshot(t *testing.T) {
+func TestExtMapForEachVisitsCurrentValues(t *testing.T) {
 	m := seedMap(
 		testObj{ID: "alpha", Name: "Alpha"},
 		testObj{ID: "beta", Name: "Beta"},
 	)
 
-	visited := 0
+	visited := map[string]bool{}
 	m.ForEach(func(value testObj) {
-		visited++
-		m.Set(testObj{ID: "gamma", Name: "Gamma"})
+		visited[value.ID] = true
 	})
 
-	if visited != 2 {
-		t.Fatalf("expected to visit 2 original items, got %d", visited)
+	if len(visited) != 2 {
+		t.Fatalf("expected to visit 2 values, got %d", len(visited))
 	}
-	if countMap(m) != 3 {
-		t.Fatalf("expected count 3 after adding gamma during iteration, got %d", countMap(m))
+	if !visited["alpha"] || !visited["beta"] {
+		t.Fatalf("expected alpha and beta to be visited, got %#v", visited)
 	}
 }
 

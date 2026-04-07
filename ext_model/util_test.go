@@ -8,12 +8,28 @@ type copyTestObj struct {
 	labels []string
 }
 
+type objectKeySet map[string]struct{}
+
+func (s objectKeySet) Contains(key string) bool {
+	_, ok := s[key]
+	return ok
+}
+
 func (o copyTestObj) Key() string {
 	return o.id
 }
 
 var _ ExtObj = copyTestObj{}
 var _ ExtModel[copyTestObj] = (*ExtMap[copyTestObj])(nil)
+
+var extObjectKeyBlackSet = objectKeySet{
+	"blocked": {},
+	"skip":    {},
+}
+
+var objectKeyFilter = WithKeyFilter[copyTestObj](func(objectKey string) bool {
+	return !extObjectKeyBlackSet.Contains(objectKey)
+})
 
 func seedCopyMap(values ...copyTestObj) *ExtMap[copyTestObj] {
 	var m ExtMap[copyTestObj]
@@ -29,6 +45,56 @@ func countCopyMap(m *ExtMap[copyTestObj]) int {
 		count++
 	})
 	return count
+}
+
+func resolveCopyExtMapOptions[V ExtObj](opts ...CopyExtMapOption[V]) copyExtMapOptions[V] {
+	options := copyExtMapOptions[V]{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&options)
+		}
+	}
+	return options
+}
+
+func TestObjectKeyFilter(t *testing.T) {
+	options := resolveCopyExtMapOptions(objectKeyFilter)
+	if options.keyFilter == nil {
+		t.Fatal("expected keyFilter to be configured")
+	}
+
+	testCases := []struct {
+		key  string
+		want bool
+	}{
+		{key: "alpha", want: true},
+		{key: "blocked", want: false},
+		{key: "skip", want: false},
+	}
+
+	for _, tc := range testCases {
+		if got := options.keyFilter(tc.key); got != tc.want {
+			t.Fatalf("expected key %s => %t, got %t", tc.key, tc.want, got)
+		}
+	}
+}
+
+func TestWithDeepCopyOption(t *testing.T) {
+	options := resolveCopyExtMapOptions(WithDeepCopy[copyTestObj](func(value copyTestObj) copyTestObj {
+		value.labels = append([]string(nil), value.labels...)
+		return value
+	}))
+	if options.deepCopy == nil {
+		t.Fatal("expected deepCopy to be configured")
+	}
+
+	original := copyTestObj{id: "alpha", labels: []string{"a", "b"}}
+	cloned := options.deepCopy(original)
+	original.labels[0] = "changed"
+
+	if cloned.labels[0] != "a" {
+		t.Fatalf("expected cloned labels to stay independent, got %s", cloned.labels[0])
+	}
 }
 
 func TestCopyExtMapCopiesAllValuesByDefault(t *testing.T) {
