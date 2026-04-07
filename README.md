@@ -1,6 +1,8 @@
 # biz_ext_framework
 
-`biz_ext_framework` is a Go workspace for reusable business extension components.
+`biz_ext_framework` is a repository for reusable business extension components.
+
+Go modules are managed inside subdirectories. The current module lives in [`ext_model`](./ext_model).
 
 ## Packages
 
@@ -50,8 +52,8 @@ func main() {
 
 ## Development
 
-Run tests:
+Run tests from the module directory:
 
 ```bash
-go test ./...
+cd ext_model && go test ./...
 ```

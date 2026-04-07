@@ -1,6 +1,8 @@
 # biz_ext_framework
 
-`biz_ext_framework` 是一个用于沉淀可复用业务扩展组件的 Go 仓库。
+`biz_ext_framework` 是一个用于沉淀可复用业务扩展组件的仓库。
+
+Go module 按子目录管理，当前模块位于 [`ext_model`](./ext_model)。
 
 ## 包概览
 
@@ -50,8 +52,8 @@ func main() {
 
 ## 开发
 
-运行测试：
+在模块目录下运行测试：
 
 ```bash
-go test ./...
+cd ext_model && go test ./...
 ```

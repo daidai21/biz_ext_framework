@@ -2,6 +2,8 @@
 
 `ext_model` provides a small generic map container for business models.
 
+This directory is an independent Go module.
+
 ## Core Types
 
 ### `ExtObj`
