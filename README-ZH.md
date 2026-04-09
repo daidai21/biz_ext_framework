@@ -2,9 +2,22 @@
 
 `biz_ext_framework` 是一个用于沉淀可复用业务扩展组件的仓库。
 
-Go module 按子目录管理，当前模块位于 [`ext_model`](./ext_model)。
+组件按仓库顶层目录组织。其中一部分目录已经是独立 Go module，另一部分目录目前先作为占位，留待后续补充实现。
 
-## 包概览
+## 目录结构
+
+- `biz_ctx/`：业务上下文组件占位目录
+- `biz_identity/`：业务身份抽象的独立 Go module
+- `biz_process/`：业务流程组件占位目录
+- `ext_interceptor/`：扩展拦截器组件占位目录
+- `ext_model/`：扩展模型抽象的独立 Go module
+- `ext_process/`：扩展流程组件占位目录
+- `ext_spi/`：SPI 模板抽象的独立 Go module
+- `service_manager/`：服务管理组件占位目录
+- `Makefile`：仓库级辅助命令
+- `go.mod`：仓库级 Go module 定义
+
+## 已实现模块
 
 ### `ext_model`
 
@@ -32,6 +45,20 @@ Go module 按子目录管理，当前模块位于 [`ext_model`](./ext_model)。
 
 - English: [`biz_identity/README.md`](./biz_identity/README.md)
 - 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+### `ext_spi`
+
+`ext_spi` 提供了一个支持四种模式的通用 SPI 模板：
+
+- `First`
+- `All`
+- `FirstMatched`
+- `AllMatched`
+
+文档入口：
+
+- English: [`ext_spi/README.md`](./ext_spi/README.md)
+- 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
 
 ## 快速开始
 
@@ -65,8 +92,14 @@ func main() {
 
 ## 开发
 
-在模块目录下运行测试：
+在目标模块目录下运行测试：
 
 ```bash
 cd ext_model && go test ./...
+```
+
+仓库级辅助命令：
+
+```bash
+make statistics_lines
 ```
