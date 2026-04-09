@@ -20,6 +20,19 @@ Go module 按子目录管理，当前模块位于 [`ext_model`](./ext_model)。
 - English: [`ext_model/README.md`](./ext_model/README.md)
 - 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
 
+### `biz_identity`
+
+`biz_identity` 提供了一个面向业务身份抽象的技术组件：
+
+- `BizIdentity`
+- `Parser`
+- `Validator`
+
+文档入口：
+
+- English: [`biz_identity/README.md`](./biz_identity/README.md)
+- 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
 ## 快速开始
 
 ```go
@@ -28,7 +41,7 @@ package main
 import (
     "fmt"
 
-    "biz_ext_framework/ext_model"
+    "github.com/daidai21/biz_ext_framework/ext_model"
 )
 
 type User struct {

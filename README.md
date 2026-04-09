@@ -20,6 +20,19 @@ Documentation:
 - English: [`ext_model/README.md`](./ext_model/README.md)
 - 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
 
+### `biz_identity`
+
+`biz_identity` provides a business identity component for e-commerce scenarios:
+
+- `BizIdentity`
+- `Parser`
+- `Validator`
+
+Documentation:
+
+- English: [`biz_identity/README.md`](./biz_identity/README.md)
+- 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
 ## Quick Start
 
 ```go
@@ -28,7 +41,7 @@ package main
 import (
     "fmt"
 
-    "biz_ext_framework/ext_model"
+    "github.com/daidai21/biz_ext_framework/ext_model"
 )
 
 type User struct {

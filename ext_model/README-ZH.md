@@ -58,7 +58,7 @@ package main
 import (
     "fmt"
 
-    "biz_ext_framework/ext_model"
+    "github.com/daidai21/biz_ext_framework/ext_model"
 )
 
 type User struct {
@@ -92,7 +92,7 @@ func main() {
 如果需要复制一个 `ExtMap`，可以使用 `ext_model.CopyExtMap`：
 
 ```go
-import "biz_ext_framework/ext_model"
+import "github.com/daidai21/biz_ext_framework/ext_model"
 
 copied := ext_model.CopyExtMap(src)
 filtered := ext_model.CopyExtMap(src, ext_model.WithKeyFilter[User](func(key string) bool {
