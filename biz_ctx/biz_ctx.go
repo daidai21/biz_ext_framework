@@ -1,6 +1,9 @@
 package biz_ctx
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // BizSession is the technical identity for one business session.
 type BizSession interface {
@@ -14,11 +17,30 @@ type BizInstance interface {
 
 // BizCtx describes a 1:N relationship from biz_session to biz_instance.
 type BizCtx interface {
-	Set(session BizSession, instance BizInstance)
-	Get(sessionID string, instanceID string) (BizInstance, bool)
-	Del(sessionID string, instanceID string) (BizInstance, bool)
-	ForEach(sessionID string, fn func(instance BizInstance))
-	List(sessionID string) []BizInstance
+	Set(ctx context.Context, instance BizInstance) bool
+	Get(ctx context.Context, instanceID string) (BizInstance, bool)
+	Del(ctx context.Context, instanceID string) (BizInstance, bool)
+	ForEach(ctx context.Context, fn func(instance BizInstance))
+	List(ctx context.Context) []BizInstance
+}
+
+type bizSessionContextKey struct{}
+
+// WithBizSession writes BizSession into context.Context.
+func WithBizSession(ctx context.Context, session BizSession) context.Context {
+	return context.WithValue(ctx, bizSessionContextKey{}, session)
+}
+
+// BizSessionFromContext reads BizSession from context.Context.
+func BizSessionFromContext(ctx context.Context) (BizSession, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+	session, ok := ctx.Value(bizSessionContextKey{}).(BizSession)
+	if !ok || session == nil {
+		return nil, false
+	}
+	return session, true
 }
 
 // Ctx is the default concurrency-safe BizCtx implementation.
@@ -34,23 +56,33 @@ func NewBizCtx() BizCtx {
 	return &Ctx{}
 }
 
-func (c *Ctx) Set(session BizSession, instance BizInstance) {
+func (c *Ctx) Set(ctx context.Context, instance BizInstance) bool {
+	sessionID, ok := bizSessionIDFromContext(ctx)
+	if !ok {
+		return false
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.data == nil {
 		c.data = make(map[string]map[string]BizInstance)
 	}
-	sessionID := session.BizSessionId()
 	bucket := c.data[sessionID]
 	if bucket == nil {
 		bucket = make(map[string]BizInstance)
 		c.data[sessionID] = bucket
 	}
 	bucket[instance.BizInstanceId()] = instance
+	return true
 }
 
-func (c *Ctx) Get(sessionID string, instanceID string) (BizInstance, bool) {
+func (c *Ctx) Get(ctx context.Context, instanceID string) (BizInstance, bool) {
+	sessionID, ok := bizSessionIDFromContext(ctx)
+	if !ok {
+		return nil, false
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -65,7 +97,12 @@ func (c *Ctx) Get(sessionID string, instanceID string) (BizInstance, bool) {
 	return instance, ok
 }
 
-func (c *Ctx) Del(sessionID string, instanceID string) (BizInstance, bool) {
+func (c *Ctx) Del(ctx context.Context, instanceID string) (BizInstance, bool) {
+	sessionID, ok := bizSessionIDFromContext(ctx)
+	if !ok {
+		return nil, false
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -89,7 +126,12 @@ func (c *Ctx) Del(sessionID string, instanceID string) (BizInstance, bool) {
 	return instance, true
 }
 
-func (c *Ctx) ForEach(sessionID string, fn func(instance BizInstance)) {
+func (c *Ctx) ForEach(ctx context.Context, fn func(instance BizInstance)) {
+	sessionID, ok := bizSessionIDFromContext(ctx)
+	if !ok {
+		return
+	}
+
 	c.mu.RLock()
 	bucket := c.data[sessionID]
 	if len(bucket) == 0 {
@@ -108,7 +150,12 @@ func (c *Ctx) ForEach(sessionID string, fn func(instance BizInstance)) {
 	}
 }
 
-func (c *Ctx) List(sessionID string) []BizInstance {
+func (c *Ctx) List(ctx context.Context) []BizInstance {
+	sessionID, ok := bizSessionIDFromContext(ctx)
+	if !ok {
+		return nil
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -122,4 +169,16 @@ func (c *Ctx) List(sessionID string) []BizInstance {
 		result = append(result, instance)
 	}
 	return result
+}
+
+func bizSessionIDFromContext(ctx context.Context) (string, bool) {
+	session, ok := BizSessionFromContext(ctx)
+	if !ok {
+		return "", false
+	}
+	sessionID := session.BizSessionId()
+	if sessionID == "" {
+		return "", false
+	}
+	return sessionID, true
 }

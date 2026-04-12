@@ -29,21 +29,30 @@ type BizInstance interface {
 
 ```go
 type BizCtx interface {
-    Set(session BizSession, instance BizInstance)
-    Get(sessionID string, instanceID string) (BizInstance, bool)
-    Del(sessionID string, instanceID string) (BizInstance, bool)
-    ForEach(sessionID string, fn func(instance BizInstance))
-    List(sessionID string) []BizInstance
+    Set(ctx context.Context, instance BizInstance) bool
+    Get(ctx context.Context, instanceID string) (BizInstance, bool)
+    Del(ctx context.Context, instanceID string) (BizInstance, bool)
+    ForEach(ctx context.Context, fn func(instance BizInstance))
+    List(ctx context.Context) []BizInstance
 }
+```
+
+`biz_session` is passed and read directly by `context.Context`:
+
+```go
+ctx = biz_ctx.WithBizSession(ctx, session)
+session, ok := biz_ctx.BizSessionFromContext(ctx)
 ```
 
 ## Behavior
 
-- `Set` binds one instance into one session bucket.
+- `Set/Get/Del/ForEach/List` all read `biz_session` from `context.Context`.
 - One session can hold many instances.
 - Same `instanceID` in the same session is overwritten by latest `Set`.
 - Same `instanceID` in different sessions is isolated.
 - `ForEach` iterates a snapshot for the target session.
+- `Set` returns `false` when `context.Context` does not carry a valid `BizSession`.
+- `Get`/`Del` return `false`, `List` returns `nil`, and `ForEach` is no-op for invalid context.
 
 ## Example
 
@@ -51,6 +60,7 @@ type BizCtx interface {
 package main
 
 import (
+    "context"
     "fmt"
 
     "github.com/daidai21/biz_ext_framework/biz_ctx"
@@ -74,13 +84,14 @@ func (i Instance) BizInstanceId() string {
 }
 
 func main() {
-    ctx := biz_ctx.NewBizCtx()
+    bizCtx := biz_ctx.NewBizCtx()
 
     session := Session{id: "s1"}
-    ctx.Set(session, Instance{id: "i1", name: "order"})
-    ctx.Set(session, Instance{id: "i2", name: "refund"})
+    reqCtx := biz_ctx.WithBizSession(context.Background(), session)
+    bizCtx.Set(reqCtx, Instance{id: "i1", name: "order"})
+    bizCtx.Set(reqCtx, Instance{id: "i2", name: "refund"})
 
-    value, ok := ctx.Get("s1", "i1")
+    value, ok := bizCtx.Get(reqCtx, "i1")
     if !ok {
         panic("missing instance")
     }
