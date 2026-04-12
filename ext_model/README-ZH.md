@@ -50,44 +50,7 @@ type ExtModel[V ExtObj] interface {
 - `ForEach` 会遍历当前 Map 中的值。
 - 遍历顺序不保证稳定。
 
-## 示例
-
-```go
-package main
-
-import (
-    "fmt"
-
-    "github.com/daidai21/biz_ext_framework/ext_model"
-)
-
-type User struct {
-    ID   string
-    Name string
-}
-
-func (u User) Key() string {
-    return u.ID
-}
-
-func main() {
-    var users ext_model.ExtModel[User] = &ext_model.ExtMap[User]{}
-
-    users.Set(User{ID: "u1", Name: "Alice"})
-    users.Set(User{ID: "u2", Name: "Bob"})
-
-    user, ok := users.Get("u1")
-    fmt.Println(user.Name, ok)
-
-    users.ForEach(func(value User) {
-        fmt.Println(value.ID, value.Name)
-    })
-
-    users.Del("u2")
-}
-```
-
-## 使用教程：在 `UserDO` 上挂载多个扩展结构
+## 示例：在 `UserDO` 上挂载多个扩展结构
 
 下面示例演示如何在一个用户对象上挂载多个扩展信息。  
 注意：`ExtModel` 是接口类型，业务字段建议直接使用 `ext_model.ExtModel[...]`（而不是 `*ext_model.ExtModel`）。

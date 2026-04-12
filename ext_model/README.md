@@ -52,44 +52,7 @@ Public methods:
 
 Because `ForEach` uses a snapshot, calling `Set` or `Del` inside the callback will not break the current iteration.
 
-## Example
-
-```go
-package main
-
-import (
-    "fmt"
-
-    "github.com/daidai21/biz_ext_framework/ext_model"
-)
-
-type User struct {
-    ID   string
-    Name string
-}
-
-func (u User) Key() string {
-    return u.ID
-}
-
-func main() {
-    var users ext_model.ExtModel[User] = &ext_model.ExtMap[User]{}
-
-    users.Set(User{ID: "u1", Name: "Alice"})
-    users.Set(User{ID: "u2", Name: "Bob"})
-
-    user, ok := users.Get("u1")
-    fmt.Println(user.Name, ok)
-
-    users.ForEach(func(value User) {
-        fmt.Println(value.ID, value.Name)
-    })
-
-    users.Del("u2")
-}
-```
-
-## Tutorial: Attach Multiple Extension Structs to `UserDO`
+## Example: Attach Multiple Extension Structs to `UserDO`
 
 The following example shows how to attach multiple extension records to one user object.
 
