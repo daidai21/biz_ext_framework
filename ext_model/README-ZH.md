@@ -87,6 +87,60 @@ func main() {
 }
 ```
 
+## 使用教程：在 `UserDO` 上挂载多个扩展结构
+
+下面示例演示如何在一个用户对象上挂载多个扩展信息。  
+注意：`ExtModel` 是接口类型，业务字段建议直接使用 `ext_model.ExtModel[...]`（而不是 `*ext_model.ExtModel`）。
+
+```go
+package main
+
+import (
+	"github.com/daidai21/biz_ext_framework/ext_model"
+	"testing"
+)
+
+type userInfo struct {
+	UserId int64
+	ext_model.ExtModel
+}
+
+var (
+	_ ext_model.ExtObj = userTaxInfo{}
+	_ ext_model.ExtObj = userPhdInfo{}
+)
+
+type userTaxInfo struct {
+	TaxId string
+}
+
+func (u userTaxInfo) Key() string {
+	return "userTaxInfo"
+}
+
+type userPhdInfo struct {
+	PhdId string
+}
+
+func (u userPhdInfo) Key() string {
+	return "userPhdInfo"
+}
+
+func main(t *testing.T) {
+	info := userInfo{
+		UserId:   1,
+		ExtModel: ext_model.NewExtModel(),
+	}
+	info.Set(userTaxInfo{TaxId: "tax_2313"})
+	info.Set(userPhdInfo{PhdId: "phd_6748392"})
+	t.Log(info)
+	info.ForEach(func(value ExtObj) {
+		t.Log(value)
+	})
+}
+
+```
+
 ## Copy 工具
 
 如果需要复制一个 `ExtMap`，可以使用 `ext_model.CopyExtMap`：
