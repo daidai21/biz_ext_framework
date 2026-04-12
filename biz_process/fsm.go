@@ -1,0 +1,133 @@
+package biz_process
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"sync"
+)
+
+type State string
+type Event string
+
+var (
+	ErrTransitionNotFound = errors.New("transition not found")
+	ErrGuardRejected      = errors.New("guard rejected")
+)
+
+type Guard func(ctx context.Context, from State, event Event, payload any) error
+
+type Action func(ctx context.Context, from State, to State, event Event, payload any) error
+
+type Transition struct {
+	From   State
+	Event  Event
+	To     State
+	Guard  Guard
+	Action Action
+}
+
+type Extension interface {
+	BeforeTransition(ctx context.Context, from State, to State, event Event, payload any) error
+	AfterTransition(ctx context.Context, from State, to State, event Event, payload any)
+	OnTransitionError(ctx context.Context, from State, to State, event Event, payload any, err error)
+}
+
+type NoopExtension struct{}
+
+func (NoopExtension) BeforeTransition(context.Context, State, State, Event, any) error   { return nil }
+func (NoopExtension) AfterTransition(context.Context, State, State, Event, any)          {}
+func (NoopExtension) OnTransitionError(context.Context, State, State, Event, any, error) {}
+
+type transitionKey struct {
+	from  State
+	event Event
+}
+
+type FSM struct {
+	mu sync.Mutex
+
+	state State
+	rules map[transitionKey]Transition
+	exts  []Extension
+}
+
+func NewFSM(initial State, transitions []Transition, extensions ...Extension) (*FSM, error) {
+	rules := make(map[transitionKey]Transition, len(transitions))
+	for _, t := range transitions {
+		key := transitionKey{from: t.From, event: t.Event}
+		if _, exists := rules[key]; exists {
+			return nil, fmt.Errorf("duplicate transition: from=%q event=%q", t.From, t.Event)
+		}
+		rules[key] = t
+	}
+
+	exts := make([]Extension, 0, len(extensions))
+	for _, ext := range extensions {
+		if ext != nil {
+			exts = append(exts, ext)
+		}
+	}
+
+	return &FSM{
+		state: initial,
+		rules: rules,
+		exts:  exts,
+	}, nil
+}
+
+func (f *FSM) State() State {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.state
+}
+
+func (f *FSM) Fire(ctx context.Context, event Event, payload any) (State, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	from := f.state
+	t, ok := f.rules[transitionKey{from: from, event: event}]
+	if !ok {
+		err := fmt.Errorf("%w: from=%q event=%q", ErrTransitionNotFound, from, event)
+		f.onTransitionError(ctx, from, "", event, payload, err)
+		return from, err
+	}
+
+	to := t.To
+	for _, ext := range f.exts {
+		if err := ext.BeforeTransition(ctx, from, to, event, payload); err != nil {
+			wrapped := fmt.Errorf("before transition hook failed: %w", err)
+			f.onTransitionError(ctx, from, to, event, payload, wrapped)
+			return from, wrapped
+		}
+	}
+
+	if t.Guard != nil {
+		if err := t.Guard(ctx, from, event, payload); err != nil {
+			wrapped := fmt.Errorf("%w: %v", ErrGuardRejected, err)
+			f.onTransitionError(ctx, from, to, event, payload, wrapped)
+			return from, wrapped
+		}
+	}
+
+	if t.Action != nil {
+		if err := t.Action(ctx, from, to, event, payload); err != nil {
+			wrapped := fmt.Errorf("action failed: %w", err)
+			f.onTransitionError(ctx, from, to, event, payload, wrapped)
+			return from, wrapped
+		}
+	}
+
+	f.state = to
+	for _, ext := range f.exts {
+		ext.AfterTransition(ctx, from, to, event, payload)
+	}
+	return to, nil
+}
+
+func (f *FSM) onTransitionError(ctx context.Context, from State, to State, event Event, payload any, err error) {
+	for _, ext := range f.exts {
+		ext.OnTransitionError(ctx, from, to, event, payload, err)
+	}
+}
