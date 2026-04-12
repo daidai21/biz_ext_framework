@@ -89,6 +89,58 @@ func main() {
 }
 ```
 
+## Tutorial: Attach Multiple Extension Structs to `UserDO`
+
+The following example shows how to attach multiple extension records to one user object.
+
+```go
+package main
+
+import (
+	"github.com/daidai21/biz_ext_framework/ext_model"
+	"testing"
+)
+
+type userInfo struct {
+	UserId int64
+	ext_model.ExtModel
+}
+
+var (
+	_ ext_model.ExtObj = userTaxInfo{}
+	_ ext_model.ExtObj = userPhdInfo{}
+)
+
+type userTaxInfo struct {
+	TaxId string
+}
+
+func (u userTaxInfo) Key() string {
+	return "userTaxInfo"
+}
+
+type userPhdInfo struct {
+	PhdId string
+}
+
+func (u userPhdInfo) Key() string {
+	return "userPhdInfo"
+}
+
+func main(t *testing.T) {
+	info := userInfo{
+		UserId:   1,
+		ExtModel: ext_model.NewExtModel(),
+	}
+	info.Set(userTaxInfo{TaxId: "tax_2313"})
+	info.Set(userPhdInfo{PhdId: "phd_6748392"})
+	t.Log(info)
+	info.ForEach(func(value ext_model.ExtObj) {
+		t.Log(value)
+	})
+}
+```
+
 ## Copy Utility
 
 If you need to copy an `ExtMap`, use `ext_model.CopyExtMap`:
