@@ -73,6 +73,27 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 }
 ```
 
+## DAG Orchestration
+
+`dag.go` provides DAG-based orchestration for dependency-driven flow.
+
+- nodes run by dependency order
+- same topological level runs in parallel
+- cycle / invalid dependency detection built in
+
+```go
+dag := []biz_process.DAGNode{
+    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+    {Name: "audit", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
+    {Name: "notify", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
+    {Name: "finalize", DependsOn: []string{"audit", "notify"}, Task: func(ctx context.Context) error { return nil }},
+}
+
+if err := biz_process.RunDAG(context.Background(), dag); err != nil {
+    panic(err)
+}
+```
+
 ## Example
 
 ```go

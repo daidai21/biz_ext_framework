@@ -73,6 +73,27 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 }
 ```
 
+## DAG 流程编排
+
+`dag.go` 提供了基于依赖关系的 DAG 编排能力。
+
+- 节点按依赖顺序执行
+- 同一拓扑层级会并行执行
+- 内置环检测与非法依赖校验
+
+```go
+dag := []biz_process.DAGNode{
+    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+    {Name: "audit", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
+    {Name: "notify", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
+    {Name: "finalize", DependsOn: []string{"audit", "notify"}, Task: func(ctx context.Context) error { return nil }},
+}
+
+if err := biz_process.RunDAG(context.Background(), dag); err != nil {
+    panic(err)
+}
+```
+
 ## 示例
 
 ```go
