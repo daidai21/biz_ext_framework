@@ -48,6 +48,31 @@ type Extension interface {
 - 在状态更新前任一步出错，状态都保持不变。
 - `OnTransitionError` 会在规则缺失、钩子失败、Guard 拒绝、Action 失败时触发。
 
+
+
+## BPMN-like 流程编排
+
+`bpmn.go` 提供了一个轻量流程编排器，可通过 `var process = []Step{...}` 配置流程。
+
+- 顶层 `[]Step` 按串行执行
+- `Step.Parallel` 内分支并行执行
+- 每个 `Step` 必须且只能配置一种模式：`Task` 或 `Parallel`
+
+```go
+process := []biz_process.Step{
+    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+    {Name: "fanout", Parallel: []biz_process.Step{
+        {Name: "audit", Task: func(ctx context.Context) error { return nil }},
+        {Name: "notify", Task: func(ctx context.Context) error { return nil }},
+    }},
+    {Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+}
+
+if err := biz_process.RunProcess(context.Background(), process); err != nil {
+    panic(err)
+}
+```
+
 ## 示例
 
 ```go

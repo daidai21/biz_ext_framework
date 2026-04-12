@@ -48,6 +48,31 @@ Use `NoopExtension` as a default no-op implementation.
 - Any error before state update keeps the original state.
 - `OnTransitionError` is triggered for transition-not-found, hook error, guard rejection, and action error.
 
+
+
+## BPMN-like Orchestration
+
+`bpmn.go` provides a lightweight process orchestrator configured by `var process = []Step{...}`.
+
+- top-level `[]Step` runs in serial
+- `Step.Parallel` runs branches in parallel
+- each `Step` must define exactly one mode: `Task` or `Parallel`
+
+```go
+process := []biz_process.Step{
+    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+    {Name: "fanout", Parallel: []biz_process.Step{
+        {Name: "audit", Task: func(ctx context.Context) error { return nil }},
+        {Name: "notify", Task: func(ctx context.Context) error { return nil }},
+    }},
+    {Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+}
+
+if err := biz_process.RunProcess(context.Background(), process); err != nil {
+    panic(err)
+}
+```
+
 ## Example
 
 ```go
