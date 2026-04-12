@@ -8,11 +8,20 @@ type ExtObj interface {
 }
 
 // ExtModel defines the behavior contract implemented by ExtMap.
-type ExtModel[V ExtObj] interface {
-	Get(key string) (V, bool)
-	Set(value V)
-	Del(key string) (V, bool)
-	ForEach(fn func(value V))
+type ExtModel interface {
+	Get(key string) (ExtObj, bool)
+	Set(value ExtObj)
+	Del(key string) (ExtObj, bool)
+	ForEach(fn func(value ExtObj))
+}
+
+var _ ExtModel = (*ExtMap[ExtObj])(nil)
+
+func NewExtModel() ExtModel {
+	return &ExtMap[ExtObj]{
+		mu:   sync.RWMutex{},
+		data: make(map[string]ExtObj),
+	}
 }
 
 // ExtMap is a generic, concurrency-safe map wrapper for business extensions.

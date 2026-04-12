@@ -1,38 +1,38 @@
 package ext_model
 
-type CopyExtMapOption[V ExtObj] func(*copyExtMapOptions[V])
+type CopyExtMapOption func(*copyExtMapOptions)
 
-type copyExtMapOptions[V ExtObj] struct {
-	deepCopy  func(V) V
+type copyExtMapOptions struct {
+	deepCopy  func(ExtObj) ExtObj
 	keyFilter func(string) bool
 }
 
-func WithDeepCopy[V ExtObj](fn func(V) V) CopyExtMapOption[V] {
-	return func(options *copyExtMapOptions[V]) {
+func WithDeepCopy(fn func(ExtObj) ExtObj) CopyExtMapOption {
+	return func(options *copyExtMapOptions) {
 		options.deepCopy = fn
 	}
 }
 
-func WithKeyFilter[V ExtObj](fn func(string) bool) CopyExtMapOption[V] {
-	return func(options *copyExtMapOptions[V]) {
+func WithKeyFilter(fn func(string) bool) CopyExtMapOption {
+	return func(options *copyExtMapOptions) {
 		options.keyFilter = fn
 	}
 }
 
-func CopyExtMap[V ExtObj](src ExtModel[V], opts ...CopyExtMapOption[V]) *ExtMap[V] {
-	var dst ExtMap[V]
+func CopyExtMap(src ExtModel, opts ...CopyExtMapOption) *ExtMap[ExtObj] {
+	var dst ExtMap[ExtObj]
 	if src == nil {
 		return &dst
 	}
 
-	options := copyExtMapOptions[V]{}
+	options := copyExtMapOptions{}
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
 
-	src.ForEach(func(value V) {
+	src.ForEach(func(value ExtObj) {
 		key := value.Key()
 		if options.keyFilter != nil && !options.keyFilter(key) {
 			return
