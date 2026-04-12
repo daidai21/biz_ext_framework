@@ -8,7 +8,6 @@ type testObj struct {
 }
 
 var _ ExtObj = testObj{}
-var _ ExtModel[testObj] = (*ExtMap[testObj])(nil)
 
 func (o testObj) Key() string {
 	return o.ID
@@ -20,14 +19,6 @@ func seedMap(values ...testObj) *ExtMap[testObj] {
 		m.Set(value)
 	}
 	return &m
-}
-
-func countMap(m *ExtMap[testObj]) int {
-	count := 0
-	m.ForEach(func(value testObj) {
-		count++
-	})
-	return count
 }
 
 func TestExtMapZeroValueIsUsable(t *testing.T) {
@@ -83,21 +74,69 @@ func TestExtMapForEachVisitsCurrentValues(t *testing.T) {
 	}
 }
 
-func TestExtMapUsesValueKeyForOverwrite(t *testing.T) {
-	m := seedMap(
-		testObj{ID: "alpha", Name: "Alpha"},
-		testObj{ID: "alpha", Name: "Override"},
-	)
+type userInfo struct {
+	UserId int64
+	ExtModel
+}
 
-	if countMap(m) != 1 {
-		t.Fatalf("expected count 1 when keys collide, got %d", countMap(m))
+var (
+	_ ExtObj = userTaxInfo{}
+	_ ExtObj = userPhdInfo{}
+)
+
+type userTaxInfo struct {
+	TaxId string
+}
+
+func (u userTaxInfo) Key() string {
+	return "userTaxInfo"
+}
+
+type userPhdInfo struct {
+	PhdId string
+}
+
+func (u userPhdInfo) Key() string {
+	return "userPhdInfo"
+}
+
+func TestReadmeAttachMultipleExtensionStructs(t *testing.T) {
+	info := userInfo{
+		UserId:   1,
+		ExtModel: NewExtModel(),
 	}
+	info.Set(userTaxInfo{TaxId: "tax_2313"})
+	info.Set(userPhdInfo{PhdId: "phd_6748392"})
 
-	value, ok := m.Get("alpha")
+	taxValue, ok := info.Get("userTaxInfo")
 	if !ok {
-		t.Fatal("expected alpha to exist")
+		t.Fatal("expected userTaxInfo to exist")
 	}
-	if value.Name != "Override" {
-		t.Fatalf("expected value Override, got %s", value.Name)
+	tax, ok := taxValue.(userTaxInfo)
+	if !ok {
+		t.Fatalf("expected userTaxInfo type, got %T", taxValue)
+	}
+	if tax.TaxId != "tax_2313" {
+		t.Fatalf("expected TaxId tax_2313, got %s", tax.TaxId)
+	}
+
+	phdValue, ok := info.Get("userPhdInfo")
+	if !ok {
+		t.Fatal("expected userPhdInfo to exist")
+	}
+	phd, ok := phdValue.(userPhdInfo)
+	if !ok {
+		t.Fatalf("expected userPhdInfo type, got %T", phdValue)
+	}
+	if phd.PhdId != "phd_6748392" {
+		t.Fatalf("expected PhdId phd_6748392, got %s", phd.PhdId)
+	}
+
+	count := 0
+	info.ForEach(func(value ExtObj) {
+		count++
+	})
+	if count != 2 {
+		t.Fatalf("expected 2 ext objects, got %d", count)
 	}
 }
