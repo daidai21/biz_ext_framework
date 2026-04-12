@@ -11,7 +11,7 @@ Components are organized by top-level directories. Some directories are already 
 - `biz_process/`: independent Go module for business process FSM
 - `ext_interceptor/`: placeholder directory for extension interceptor components
 - `ext_model/`: independent Go module for extension model abstractions
-- `ext_process/`: placeholder directory for extension process components
+- `ext_process/`: independent Go module for extension process template
 - `ext_spi/`: independent Go module for SPI template abstractions
 - `service_manager/`: placeholder directory for service manager components
 - `Makefile`: repository-level helper targets
@@ -60,6 +60,20 @@ Documentation:
 
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
+
+### `ext_process`
+
+`ext_process` provides a generic extension process template:
+
+- `Mode` (`Serial`, `Parallel`)
+- `Template`
+- `MatchFunc`
+- `ProcessFunc` (with `continueNext` support in serial mode)
+
+Documentation:
+
+- English: [`ext_process/README.md`](./ext_process/README.md)
+- 中文: [`ext_process/README-ZH.md`](./ext_process/README-ZH.md)
 
 ### `ext_spi`
 

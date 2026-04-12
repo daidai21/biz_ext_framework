@@ -11,7 +11,7 @@
 - `biz_process/`：业务流程 FSM 的独立 Go module
 - `ext_interceptor/`：扩展拦截器组件占位目录
 - `ext_model/`：扩展模型抽象的独立 Go module
-- `ext_process/`：扩展流程组件占位目录
+- `ext_process/`：扩展流程模板的独立 Go module
 - `ext_spi/`：SPI 模板抽象的独立 Go module
 - `service_manager/`：服务管理组件占位目录
 - `Makefile`：仓库级辅助命令
@@ -60,6 +60,20 @@
 
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
+
+### `ext_process`
+
+`ext_process` 提供了一个通用扩展处理模板：
+
+- `Mode`（`Serial`、`Parallel`）
+- `Template`
+- `MatchFunc`
+- `ProcessFunc`（串行模式支持 `continueNext` 控制后续执行）
+
+文档入口：
+
+- English: [`ext_process/README.md`](./ext_process/README.md)
+- 中文: [`ext_process/README-ZH.md`](./ext_process/README-ZH.md)
 
 ### `ext_spi`
 
