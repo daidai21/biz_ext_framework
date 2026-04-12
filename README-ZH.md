@@ -8,7 +8,7 @@
 
 - `biz_ctx/`：业务上下文组件占位目录
 - `biz_identity/`：业务身份抽象的独立 Go module
-- `biz_process/`：业务流程组件占位目录
+- `biz_process/`：业务流程 FSM 的独立 Go module
 - `ext_interceptor/`：扩展拦截器组件占位目录
 - `ext_model/`：扩展模型抽象的独立 Go module
 - `ext_process/`：扩展流程组件占位目录
@@ -45,6 +45,21 @@
 
 - English: [`biz_identity/README.md`](./biz_identity/README.md)
 - 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+### `biz_process`
+
+`biz_process` 提供了一个可扩展的 FSM 框架：
+
+- `State` / `Event`
+- `Transition`（`From + Event -> To`）
+- `Guard`
+- `Action`
+- `Extension` 钩子
+
+文档入口：
+
+- English: [`biz_process/README.md`](./biz_process/README.md)
+- 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
 ### `ext_spi`
 

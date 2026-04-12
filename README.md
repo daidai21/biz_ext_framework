@@ -8,7 +8,7 @@ Components are organized by top-level directories. Some directories are already 
 
 - `biz_ctx/`: placeholder directory for business context components
 - `biz_identity/`: independent Go module for business identity abstractions
-- `biz_process/`: placeholder directory for business process components
+- `biz_process/`: independent Go module for business process FSM
 - `ext_interceptor/`: placeholder directory for extension interceptor components
 - `ext_model/`: independent Go module for extension model abstractions
 - `ext_process/`: placeholder directory for extension process components
@@ -45,6 +45,21 @@ Documentation:
 
 - English: [`biz_identity/README.md`](./biz_identity/README.md)
 - 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+### `biz_process`
+
+`biz_process` provides an extensible FSM framework:
+
+- `State` / `Event`
+- `Transition` (`From + Event -> To`)
+- `Guard`
+- `Action`
+- `Extension` hooks
+
+Documentation:
+
+- English: [`biz_process/README.md`](./biz_process/README.md)
+- 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
 ### `ext_spi`
 
