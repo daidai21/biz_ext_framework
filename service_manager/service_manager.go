@@ -8,9 +8,11 @@ import (
 )
 
 const (
-	IdentityContainerName = "identity_container"
-	ProcessContainerName  = "process_container"
-	ModelContainerName    = "model_container"
+	IdentityContainerName    = "identity_container"
+	ProcessContainerName     = "process_container"
+	ModelContainerName       = "model_container"
+	CtxContainerName         = "ctx_container"
+	ObservationContainerName = "observation_container"
 )
 
 var (
@@ -60,6 +62,8 @@ type ServiceManager struct {
 	identityContainer *IdentityContainer
 	processContainer  *ProcessContainer
 	modelContainer    *ModelContainer
+	ctxContainer      *CtxContainer
+	observation       *ObservationContainer
 	containers        map[string]any
 
 	startupChecks []StartupCheck
@@ -86,6 +90,14 @@ func (m *ServiceManager) ProcessContainer() *ProcessContainer {
 
 func (m *ServiceManager) ModelContainer() *ModelContainer {
 	return m.modelContainer
+}
+
+func (m *ServiceManager) CtxContainer() *CtxContainer {
+	return m.ctxContainer
+}
+
+func (m *ServiceManager) ObservationContainer() *ObservationContainer {
+	return m.observation
 }
 
 func (m *ServiceManager) Container(name string) (any, bool) {

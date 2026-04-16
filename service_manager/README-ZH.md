@@ -8,7 +8,7 @@
 
 `service_manager` 是一个串联其他底层模块的集成层。
 
-- 使用 `service_manager`，意味着在服务侧把 `biz_identity`、`biz_process`、`ext_model` 串起来统一管理
+- 使用 `service_manager`，意味着在服务侧把 `biz_ctx`、`biz_identity`、`biz_observation`、`biz_process`、`ext_model` 串起来统一管理
 - 仓库中的其他模块依然都可以单独使用
 - 这些底层模块彼此之间没有强依赖关系，可以按业务需要独立接入
 
@@ -19,20 +19,19 @@
                           |  service_manager  |
                           |     集成管理层     |
                           +-------------------+
-                            /       |       \
-                           /        |        \
-                          v         v         v
-                +---------------+ +---------------+ +---------------+
-                | biz_identity  | |  biz_process  | |   ext_model   |
-                | 身份白名单管理 | | 多流程编排管理 | | 模型白名单裁剪 |
-                +---------------+ +---------------+ +---------------+
+                        /    /      |      \      \
+                       v    v       v       v      v
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+                |  biz_ctx  | |biz_identity| |biz_observ.| |biz_process| | ext_model |
+                |session上下文| |身份白名单  | |日志/指标/链路| |多流程编排  | |模型白名单  |
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
 
 独立使用关系：
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process
-       |                 |               |             |             |
-       +-----------------+---------------+-------------+-------------+
-                         各模块都可以独立使用
+  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+    |           |              |              |            |         |         |                |
+    +-----------+--------------+--------------+------------+---------+---------+----------------+
+                                     各模块都可以独立使用
 ```
 
 ## 核心容器
@@ -72,9 +71,37 @@
 
 builder 默认会初始化以下标准容器：
 
+- `ctx_container`
 - `identity_container`
+- `observation_container`
 - `process_container`
 - `model_container`
+
+### `CtxContainer`
+
+`CtxContainer` 用于管理 `biz_ctx.BizSession` 和上下文注入。
+
+- `Create(sessionID string) (biz_ctx.BizSession, error)`
+- `Register(session biz_ctx.BizSession) error`
+- `Remove(sessionID string)`
+- `Get(sessionID string) (biz_ctx.BizSession, bool)`
+- `SessionIDs() []string`
+- `WithSession(ctx context.Context, sessionID string) (context.Context, error)`
+- `SessionFromContext(ctx context.Context) (biz_ctx.BizSession, bool)`
+
+### `ObservationContainer`
+
+`ObservationContainer` 用于管理 `biz_observation` 依赖。
+
+- `SetLogger(logger biz_observation.Logger)`
+- `SetMetricsRecorder(recorder biz_observation.MetricsRecorder)`
+- `SetTracer(tracer biz_observation.Tracer)`
+- `Logger() biz_observation.Logger`
+- `MetricsRecorder() biz_observation.MetricsRecorder`
+- `Tracer() biz_observation.Tracer`
+- `Log(...)`
+- `ObserveDuration(...)`
+- `StartSpan(...)`
 
 ### `IdentityContainer`
 

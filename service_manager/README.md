@@ -8,7 +8,7 @@ This directory is an independent Go module.
 
 `service_manager` is the integration layer that wires several lower-level modules together.
 
-- using `service_manager` means using `biz_identity`, `biz_process`, and `ext_model` together through one service-side management layer
+- using `service_manager` means using `biz_ctx`, `biz_identity`, `biz_observation`, `biz_process`, and `ext_model` together through one service-side management layer
 - other modules in this repository can still be used independently
 - those lower-level modules do not depend on each other and can be adopted separately based on business needs
 
@@ -19,20 +19,20 @@ This directory is an independent Go module.
                           |  service_manager  |
                           |   integration     |
                           +-------------------+
-                            /       |       \
-                           /        |        \
-                          v         v         v
-                +---------------+ +---------------+ +---------------+
-                | biz_identity  | |  biz_process  | |   ext_model   |
-                | identity wl   | | multi-process | | model filter  |
-                +---------------+ +---------------+ +---------------+
+                        /    /      |      \      \
+                       v    v       v       v      v
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+                |  biz_ctx  | |biz_identity| |biz_observ.| |biz_process| | ext_model |
+                |session ctx| |identity wl | |log/metric/| |multi-     | |model      |
+                |           | |            | |trace      | |process     | |filter     |
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
 
 Independent usage:
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process
-       |                 |               |             |             |
-       +-----------------+---------------+-------------+-------------+
-                         each module can be used alone
+  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+     |          |              |              |            |         |         |                |
+     +----------+--------------+--------------+------------+---------+---------+----------------+
+                                     each module can be used alone
 ```
 
 ## Core Containers
@@ -72,9 +72,37 @@ Lifecycle states:
 
 The builder creates these standard containers by default:
 
+- `ctx_container`
 - `identity_container`
+- `observation_container`
 - `process_container`
 - `model_container`
+
+### `CtxContainer`
+
+`CtxContainer` manages `biz_ctx.BizSession` instances and context injection.
+
+- `Create(sessionID string) (biz_ctx.BizSession, error)`
+- `Register(session biz_ctx.BizSession) error`
+- `Remove(sessionID string)`
+- `Get(sessionID string) (biz_ctx.BizSession, bool)`
+- `SessionIDs() []string`
+- `WithSession(ctx context.Context, sessionID string) (context.Context, error)`
+- `SessionFromContext(ctx context.Context) (biz_ctx.BizSession, bool)`
+
+### `ObservationContainer`
+
+`ObservationContainer` manages `biz_observation` dependencies.
+
+- `SetLogger(logger biz_observation.Logger)`
+- `SetMetricsRecorder(recorder biz_observation.MetricsRecorder)`
+- `SetTracer(tracer biz_observation.Tracer)`
+- `Logger() biz_observation.Logger`
+- `MetricsRecorder() biz_observation.MetricsRecorder`
+- `Tracer() biz_observation.Tracer`
+- `Log(...)`
+- `ObserveDuration(...)`
+- `StartSpan(...)`
 
 ### `IdentityContainer`
 

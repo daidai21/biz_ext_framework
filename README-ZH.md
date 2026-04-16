@@ -13,7 +13,9 @@
 
 当前 `service_manager` 集成了：
 
+- `biz_ctx`
 - `biz_identity`
+- `biz_observation`
 - `biz_process`
 - `ext_model`
 
@@ -24,26 +26,26 @@
                           |  service_manager  |
                           |     集成管理层     |
                           +-------------------+
-                            /       |       \
-                           /        |        \
-                          v         v         v
-                +---------------+ +---------------+ +---------------+
-                | biz_identity  | |  biz_process  | |   ext_model   |
-                | 身份白名单管理 | | 多流程编排管理 | | 模型白名单裁剪 |
-                +---------------+ +---------------+ +---------------+
+                        /    /      |      \      \
+                       v    v       v       v      v
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+                |  biz_ctx  | |biz_identity| |biz_observ.| |biz_process| | ext_model |
+                |session上下文| |身份白名单  | |日志/指标/链路| |多流程编排  | |模型白名单  |
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
 
 独立使用关系：
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process      ext_interceptor
-       |                 |               |             |             |                   |
-       +-----------------+---------------+-------------+-------------+-------------------+
-                                       各模块都可以独立使用
+  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+    |           |              |              |            |         |         |                |
+    +-----------+--------------+--------------+------------+---------+---------+----------------+
+                                     各模块都可以独立使用
 ```
 
 ## 目录结构
 
-- `biz_ctx/`：业务上下文组件占位目录
+- `biz_ctx/`：业务上下文组件的独立 Go module
 - `biz_identity/`：业务身份抽象的独立 Go module
+- `biz_observation/`：业务观测工具的独立 Go module
 - `biz_process/`：业务流程 FSM 的独立 Go module
 - `ext_interceptor/`：扩展拦截器抽象的独立 Go module
 - `ext_model/`：扩展模型抽象的独立 Go module
@@ -61,7 +63,9 @@
 
 - `ServiceManager`：服务实例生命周期管理
 - `ServiceManagerBuilder`：容器初始化与服务构建
+- `CtxContainer`：业务 session 上下文管理
 - `IdentityContainer`：业务身份白名单管理
+- `ObservationContainer`：日志 / 指标 / 链路依赖管理
 - `ProcessContainer`：多个具名流程编排管理
 - `SPIContainer`：扩展定义到扩展实现的管理
 - `InterceptorContainer`：拦截器定义到拦截器实现的管理
@@ -98,6 +102,20 @@
 
 - English: [`biz_identity/README.md`](./biz_identity/README.md)
 - 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+### `biz_observation`
+
+`biz_observation` 提供了轻量观测工具：
+
+- `log_util`
+- `metrics_util`
+- `trace_util`
+- `observation_util`
+
+文档入口：
+
+- English: [`biz_observation/README.md`](./biz_observation/README.md)
+- 中文: [`biz_observation/README-ZH.md`](./biz_observation/README-ZH.md)
 
 ### `biz_process`
 

@@ -13,7 +13,9 @@ Modules in this repository can be used in two ways:
 
 `service_manager` currently integrates:
 
+- `biz_ctx`
 - `biz_identity`
+- `biz_observation`
 - `biz_process`
 - `ext_model`
 
@@ -24,26 +26,27 @@ Those lower-level modules do not depend on each other and can still be used sepa
                           |  service_manager  |
                           |   integration     |
                           +-------------------+
-                            /       |       \
-                           /        |        \
-                          v         v         v
-                +---------------+ +---------------+ +---------------+
-                | biz_identity  | |  biz_process  | |   ext_model   |
-                | identity wl   | | multi-process | | model filter  |
-                +---------------+ +---------------+ +---------------+
+                        /    /      |      \      \
+                       v    v       v       v      v
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+                |  biz_ctx  | |biz_identity| |biz_observ.| |biz_process| | ext_model |
+                |session ctx| |identity wl | |log/metric/| |multi-     | |model      |
+                |           | |            | |trace      | |process     | |filter     |
+                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
 
 Independent usage:
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process      ext_interceptor
-       |                 |               |             |             |                   |
-       +-----------------+---------------+-------------+-------------+-------------------+
-                                       each module can be used alone
+  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+     |          |              |              |            |         |         |                |
+     +----------+--------------+--------------+------------+---------+---------+----------------+
+                                     each module can be used alone
 ```
 
 ## Directory Layout
 
-- `biz_ctx/`: placeholder directory for business context components
+- `biz_ctx/`: independent Go module for business context components
 - `biz_identity/`: independent Go module for business identity abstractions
+- `biz_observation/`: independent Go module for business observation utilities
 - `biz_process/`: independent Go module for business process FSM
 - `ext_interceptor/`: independent Go module for extension interceptor abstractions
 - `ext_model/`: independent Go module for extension model abstractions
@@ -61,7 +64,9 @@ Independent usage:
 
 - `ServiceManager`: service instance lifecycle management
 - `ServiceManagerBuilder`: container initialization and service construction
+- `CtxContainer`: business session context management
 - `IdentityContainer`: business identity whitelist management
+- `ObservationContainer`: log / metrics / trace dependency management
 - `ProcessContainer`: multiple named process orchestration management
 - `SPIContainer`: extension definition to implementation management
 - `InterceptorContainer`: interceptor definition to implementation management
@@ -98,6 +103,20 @@ Documentation:
 
 - English: [`biz_identity/README.md`](./biz_identity/README.md)
 - 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+### `biz_observation`
+
+`biz_observation` provides lightweight observation utilities:
+
+- `log_util`
+- `metrics_util`
+- `trace_util`
+- `observation_util`
+
+Documentation:
+
+- English: [`biz_observation/README.md`](./biz_observation/README.md)
+- 中文: [`biz_observation/README-ZH.md`](./biz_observation/README-ZH.md)
 
 ### `biz_process`
 

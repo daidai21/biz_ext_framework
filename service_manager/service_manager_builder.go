@@ -29,6 +29,8 @@ type ServiceManagerBuilder struct {
 	identityContainer *IdentityContainer
 	processContainer  *ProcessContainer
 	modelContainer    *ModelContainer
+	ctxContainer      *CtxContainer
+	observation       *ObservationContainer
 
 	identityScopes []string
 	processes      []processBuildConfig
@@ -77,6 +79,30 @@ func (b *ServiceManagerBuilder) WithModelContainer(container *ModelContainer) *S
 		return b
 	}
 	b.modelContainer = container
+	return b
+}
+
+func (b *ServiceManagerBuilder) WithCtxContainer(container *CtxContainer) *ServiceManagerBuilder {
+	if b.err != nil {
+		return b
+	}
+	if container == nil {
+		b.err = ErrNilContainer
+		return b
+	}
+	b.ctxContainer = container
+	return b
+}
+
+func (b *ServiceManagerBuilder) WithObservationContainer(container *ObservationContainer) *ServiceManagerBuilder {
+	if b.err != nil {
+		return b
+	}
+	if container == nil {
+		b.err = ErrNilContainer
+		return b
+	}
+	b.observation = container
 	return b
 }
 
@@ -171,6 +197,14 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 	if modelContainer == nil {
 		modelContainer = NewModelContainer()
 	}
+	ctxContainer := b.ctxContainer
+	if ctxContainer == nil {
+		ctxContainer = NewCtxContainer()
+	}
+	observationContainer := b.observation
+	if observationContainer == nil {
+		observationContainer = NewObservationContainer()
+	}
 
 	for _, scope := range b.identityScopes {
 		if err := identityContainer.AllowScope(scope); err != nil {
@@ -189,9 +223,11 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 	}
 
 	containers := map[string]any{
-		IdentityContainerName: identityContainer,
-		ProcessContainerName:  processContainer,
-		ModelContainerName:    modelContainer,
+		IdentityContainerName:    identityContainer,
+		ProcessContainerName:     processContainer,
+		ModelContainerName:       modelContainer,
+		CtxContainerName:         ctxContainer,
+		ObservationContainerName: observationContainer,
 	}
 	for _, item := range b.containers {
 		if _, exists := containers[item.name]; exists {
@@ -206,6 +242,8 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 		identityContainer: identityContainer,
 		processContainer:  processContainer,
 		modelContainer:    modelContainer,
+		ctxContainer:      ctxContainer,
+		observation:       observationContainer,
 		containers:        containers,
 		startupChecks:     append([]StartupCheck(nil), b.startupChecks...),
 		lifecycles:        append([]namedLifecycle(nil), b.lifecycles...),

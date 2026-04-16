@@ -88,6 +88,12 @@ func TestServiceManagerBuilderBuild(t *testing.T) {
 	if whitelist := manager.ModelContainer().Whitelist("psm.order#CreateOrder"); len(whitelist) != 1 || whitelist[0] != "user" {
 		t.Fatalf("unexpected whitelist: %v", whitelist)
 	}
+	if manager.CtxContainer() == nil {
+		t.Fatalf("expected ctx container initialized")
+	}
+	if manager.ObservationContainer() == nil {
+		t.Fatalf("expected observation container initialized")
+	}
 	if err := manager.Check(context.Background()); err != nil {
 		t.Fatalf("expected check success, got %v", err)
 	}
