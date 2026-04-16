@@ -108,15 +108,16 @@ It is intended for service-side orchestration registration, so different process
 
 ### `SPIContainer`
 
-`SPIContainer[Impl]` manages extension implementations grouped by SPI definition key.
+`SPIContainer[Impl, Input, Output]` manages `ext_spi` implementations grouped by SPI definition key.
 
 - `Register(definition string, impl Impl) error`
 - `Replace(definition string, impls []Impl) error`
 - `Remove(definition string)`
 - `Implementations(definition string) []Impl`
 - `Definitions() []string`
+- `Execute(ctx context.Context, definition string, input Input, mode ext_spi.Mode) ([]Output, error)`
 
-Implementations are returned in registration order.
+One `SPIContainer` binds one `ext_spi.Template`, then executes registered implementations through that template.
 
 ### `ModelContainer`
 
@@ -142,11 +143,22 @@ import (
 
 	"github.com/daidai21/biz_ext_framework/biz_process"
 	"github.com/daidai21/biz_ext_framework/ext_model"
+	"github.com/daidai21/biz_ext_framework/ext_spi"
 	"github.com/daidai21/biz_ext_framework/service_manager"
 )
 
 type userExt struct {
 	key string
+}
+
+type riskSPI interface {
+	Handle(ctx context.Context, input string) (string, error)
+}
+
+type riskSPIImpl struct{}
+
+func (riskSPIImpl) Handle(ctx context.Context, input string) (string, error) {
+	return "risk:" + input, nil
 }
 
 func (u userExt) Key() string {
@@ -164,8 +176,16 @@ func (serverLifecycle) Stop(ctx context.Context) error {
 }
 
 func main() {
-	spiContainer := service_manager.NewSPIContainer[string]()
-	if err := spiContainer.Register("risk.audit", "impl-a"); err != nil {
+	spiTemplate := ext_spi.NewTemplate(func(ctx context.Context, impl riskSPI, input string) (bool, error) {
+		return true, nil
+	}, func(ctx context.Context, impl riskSPI, input string) (string, error) {
+		return impl.Handle(ctx, input)
+	})
+	spiContainer, err := service_manager.NewSPIContainer[riskSPI, string, string](spiTemplate)
+	if err != nil {
+		panic(err)
+	}
+	if err := spiContainer.Register("risk.audit", riskSPIImpl{}); err != nil {
 		panic(err)
 	}
 
@@ -221,7 +241,7 @@ func main() {
 	fmt.Println(hasUser, hasSecret)
 
 	container, _ := manager.Container("spi_container")
-	fmt.Println(container.(*service_manager.SPIContainer[string]).Implementations("risk.audit"))
+	fmt.Println(container.(*service_manager.SPIContainer[riskSPI, string, string]).Execute(context.Background(), "risk.audit", "order", ext_spi.All))
 }
 ```
 

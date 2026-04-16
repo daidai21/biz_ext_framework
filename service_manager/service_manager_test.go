@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/daidai21/biz_ext_framework/biz_process"
+	"github.com/daidai21/biz_ext_framework/ext_spi"
 )
 
 type fakeLifecycle struct {
@@ -30,7 +31,15 @@ func (l *fakeLifecycle) Stop(ctx context.Context) error {
 
 func TestServiceManagerBuilderBuild(t *testing.T) {
 	var startupChecked bool
-	customSPI := NewSPIContainer[string]()
+	customSPITemplate := ext_spi.NewTemplate(func(ctx context.Context, impl testSPI, input string) (bool, error) {
+		return true, nil
+	}, func(ctx context.Context, impl testSPI, input string) (string, error) {
+		return impl.Handle(ctx, input)
+	})
+	customSPI, err := NewSPIContainer[testSPI, string, string](customSPITemplate)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
 
 	manager, err := NewServiceManagerBuilder("order-service").
 		WithIdentityScopes("SELLER.SHOP").
