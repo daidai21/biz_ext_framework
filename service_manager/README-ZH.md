@@ -8,7 +8,7 @@
 
 `service_manager` 是一个串联其他底层模块的集成层。
 
-- 使用 `service_manager`，意味着在服务侧把 `biz_ctx`、`biz_identity`、`biz_observation`、`biz_process`、`ext_model` 串起来统一管理
+- 使用 `service_manager`，意味着在服务侧把 `biz_ctx`、`biz_identity`、`biz_observation`、`biz_process`、`ext_model` 以及扩展编排模块串起来统一管理
 - 仓库中的其他模块依然都可以单独使用
 - 这些底层模块彼此之间没有强依赖关系，可以按业务需要独立接入
 
@@ -145,6 +145,19 @@ builder 默认会初始化以下标准容器：
 - `Execute(ctx context.Context, definition string, input Input, mode ext_spi.Mode) ([]Output, error)`
 
 一个 `SPIContainer` 会绑定一个 `ext_spi.Template`，然后通过这个模板执行注册进去的实现。
+
+### `ExtProcessContainer`
+
+`ExtProcessContainer[Impl, Input, Output]` 用于按 definition key 管理 `ext_process` 实现集合。
+
+- `Register(definition string, impl Impl) error`
+- `Replace(definition string, impls []Impl) error`
+- `Remove(definition string)`
+- `Implementations(definition string) []Impl`
+- `Definitions() []string`
+- `Execute(ctx context.Context, definition string, input Input, mode ext_process.Mode) ([]Output, error)`
+
+一个 `ExtProcessContainer` 会绑定一个 `ext_process.Template`，然后通过这个模板执行注册进去的实现。
 
 ### `InterceptorContainer`
 

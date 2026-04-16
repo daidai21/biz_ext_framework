@@ -68,6 +68,7 @@
 - `ObservationContainer`：日志 / 指标 / 链路依赖管理
 - `ProcessContainer`：多个具名流程编排管理
 - `SPIContainer`：扩展定义到扩展实现的管理
+- `ExtProcessContainer`：扩展流程定义到扩展实现的管理
 - `InterceptorContainer`：拦截器定义到拦截器实现的管理
 - `ModelContainer`：外调 RPC 前的 ext model 白名单裁剪
 

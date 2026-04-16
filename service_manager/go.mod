@@ -9,19 +9,17 @@ require (
 	github.com/daidai21/biz_ext_framework/biz_process v0.0.0
 	github.com/daidai21/biz_ext_framework/ext_interceptor v0.0.0
 	github.com/daidai21/biz_ext_framework/ext_model v0.0.0
+	github.com/daidai21/biz_ext_framework/ext_process v0.0.0
 	github.com/daidai21/biz_ext_framework/ext_spi v0.0.0
 )
 
-replace github.com/daidai21/biz_ext_framework/biz_ctx => ../biz_ctx
-
-replace github.com/daidai21/biz_ext_framework/biz_identity => ../biz_identity
-
-replace github.com/daidai21/biz_ext_framework/biz_observation => ../biz_observation
-
-replace github.com/daidai21/biz_ext_framework/biz_process => ../biz_process
-
-replace github.com/daidai21/biz_ext_framework/ext_interceptor => ../ext_interceptor
-
-replace github.com/daidai21/biz_ext_framework/ext_model => ../ext_model
-
-replace github.com/daidai21/biz_ext_framework/ext_spi => ../ext_spi
+replace (
+	github.com/daidai21/biz_ext_framework/biz_ctx => ../biz_ctx
+	github.com/daidai21/biz_ext_framework/biz_identity => ../biz_identity
+	github.com/daidai21/biz_ext_framework/biz_observation => ../biz_observation
+	github.com/daidai21/biz_ext_framework/biz_process => ../biz_process
+	github.com/daidai21/biz_ext_framework/ext_interceptor => ../ext_interceptor
+	github.com/daidai21/biz_ext_framework/ext_model => ../ext_model
+	github.com/daidai21/biz_ext_framework/ext_process => ../ext_process
+	github.com/daidai21/biz_ext_framework/ext_spi => ../ext_spi
+)

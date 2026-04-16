@@ -8,7 +8,7 @@ This directory is an independent Go module.
 
 `service_manager` is the integration layer that wires several lower-level modules together.
 
-- using `service_manager` means using `biz_ctx`, `biz_identity`, `biz_observation`, `biz_process`, and `ext_model` together through one service-side management layer
+- using `service_manager` means using `biz_ctx`, `biz_identity`, `biz_observation`, `biz_process`, `ext_model`, and extension orchestration modules together through one service-side management layer
 - other modules in this repository can still be used independently
 - those lower-level modules do not depend on each other and can be adopted separately based on business needs
 
@@ -146,6 +146,19 @@ It is intended for service-side orchestration registration, so different process
 - `Execute(ctx context.Context, definition string, input Input, mode ext_spi.Mode) ([]Output, error)`
 
 One `SPIContainer` binds one `ext_spi.Template`, then executes registered implementations through that template.
+
+### `ExtProcessContainer`
+
+`ExtProcessContainer[Impl, Input, Output]` manages `ext_process` implementations grouped by definition key.
+
+- `Register(definition string, impl Impl) error`
+- `Replace(definition string, impls []Impl) error`
+- `Remove(definition string)`
+- `Implementations(definition string) []Impl`
+- `Definitions() []string`
+- `Execute(ctx context.Context, definition string, input Input, mode ext_process.Mode) ([]Output, error)`
+
+One `ExtProcessContainer` binds one `ext_process.Template`, then executes registered implementations through that template.
 
 ### `InterceptorContainer`
 

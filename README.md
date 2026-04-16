@@ -69,6 +69,7 @@ Independent usage:
 - `ObservationContainer`: log / metrics / trace dependency management
 - `ProcessContainer`: multiple named process orchestration management
 - `SPIContainer`: extension definition to implementation management
+- `ExtProcessContainer`: extension process definition to implementation management
 - `InterceptorContainer`: interceptor definition to implementation management
 - `ModelContainer`: outbound RPC ext model whitelist filtering
 
