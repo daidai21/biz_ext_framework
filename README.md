@@ -59,6 +59,8 @@ Independent usage:
 
 `service_manager` provides a service-side integration layer built on top of other reusable modules:
 
+- `ServiceManager`: service instance lifecycle management
+- `ServiceManagerBuilder`: container initialization and service construction
 - `IdentityContainer`: business identity whitelist management
 - `ProcessContainer`: multiple named process orchestration management
 - `SPIContainer`: extension definition to implementation management

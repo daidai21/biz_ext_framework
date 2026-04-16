@@ -59,6 +59,8 @@
 
 `service_manager` 提供了一个构建在其他复用模块之上的服务侧集成层：
 
+- `ServiceManager`：服务实例生命周期管理
+- `ServiceManagerBuilder`：容器初始化与服务构建
 - `IdentityContainer`：业务身份白名单管理
 - `ProcessContainer`：多个具名流程编排管理
 - `SPIContainer`：扩展定义到扩展实现的管理

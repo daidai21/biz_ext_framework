@@ -37,6 +37,45 @@ Independent usage:
 
 ## Core Containers
 
+## Core Types
+
+### `ServiceManager`
+
+`ServiceManager` is the service instance runtime that holds initialized containers and manages lifecycle state.
+
+- `Check(ctx context.Context) error`
+- `Start(ctx context.Context) error`
+- `Stop(ctx context.Context) error`
+- `State() ServiceManagerState`
+- `IdentityContainer() *IdentityContainer`
+- `ProcessContainer() *ProcessContainer`
+- `ModelContainer() *ModelContainer`
+- `Container(name string) (any, bool)`
+
+Lifecycle states:
+
+- `READY`
+- `STARTED`
+- `STOPPED`
+
+### `ServiceManagerBuilder`
+
+`ServiceManagerBuilder` initializes standard containers, assembles startup configuration, and builds one `ServiceManager`.
+
+- `WithIdentityScopes(scopes ...string)`
+- `WithProcess(name string, process biz_process.Process)`
+- `WithModelWhitelist(rpcMethod string, allowedKeys ...string)`
+- `WithContainer(name string, container any)`
+- `WithStartupCheck(check StartupCheck)`
+- `WithLifecycle(name string, lifecycle Lifecycle)`
+- `Build() (*ServiceManager, error)`
+
+The builder creates these standard containers by default:
+
+- `identity_container`
+- `process_container`
+- `model_container`
+
 ### `IdentityContainer`
 
 `IdentityContainer` manages whitelisted business identity scopes.
@@ -114,56 +153,75 @@ func (u userExt) Key() string {
 	return u.key
 }
 
+type serverLifecycle struct{}
+
+func (serverLifecycle) Start(ctx context.Context) error {
+	return nil
+}
+
+func (serverLifecycle) Stop(ctx context.Context) error {
+	return nil
+}
+
 func main() {
-	identityContainer, err := service_manager.NewIdentityContainer("SELLER.SHOP")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(identityContainer.IsAllowed("SELLER.SHOP.OPERATOR"))
-
-	processContainer := service_manager.NewProcessContainer()
-	err = processContainer.Register("order_flow", biz_process.Process{
-		Layers: []biz_process.ProcessLayer{
-			{
-				Name: "prepare",
-				Nodes: []biz_process.ProcessNode{
-					biz_process.TaskProcessNode{
-						Name: "prepare",
-						Task: func(ctx context.Context) error { return nil },
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	if err := processContainer.Run(context.Background(), "order_flow"); err != nil {
-		panic(err)
-	}
-
 	spiContainer := service_manager.NewSPIContainer[string]()
 	if err := spiContainer.Register("risk.audit", "impl-a"); err != nil {
 		panic(err)
 	}
-	fmt.Println(spiContainer.Implementations("risk.audit"))
 
-	modelContainer := service_manager.NewModelContainer()
-	if err := modelContainer.SetWhitelist("psm.order#CreateOrder", []string{"user"}); err != nil {
+	manager, err := service_manager.NewServiceManagerBuilder("order-service").
+		WithIdentityScopes("SELLER.SHOP").
+		WithProcess("order_flow", biz_process.Process{
+			Layers: []biz_process.ProcessLayer{
+				{
+					Name: "prepare",
+					Nodes: []biz_process.ProcessNode{
+						biz_process.TaskProcessNode{
+							Name: "prepare",
+							Task: func(ctx context.Context) error { return nil },
+						},
+					},
+				},
+			},
+		}).
+		WithModelWhitelist("psm.order#CreateOrder", "user").
+		WithContainer("spi_container", spiContainer).
+		WithStartupCheck(func(ctx context.Context, manager *service_manager.ServiceManager) error {
+			if !manager.IdentityContainer().IsAllowed("SELLER.SHOP.OPERATOR") {
+				return fmt.Errorf("identity scope missing")
+			}
+			return nil
+		}).
+		WithLifecycle("http_server", serverLifecycle{}).
+		Build()
+	if err != nil {
 		panic(err)
 	}
+
+	if err := manager.Start(context.Background()); err != nil {
+		panic(err)
+	}
+	defer manager.Stop(context.Background())
+
+	fmt.Println(manager.State())
+	fmt.Println(manager.IdentityContainer().IsAllowed("SELLER.SHOP.OPERATOR"))
+	fmt.Println(manager.ProcessContainer().Run(context.Background(), "order_flow"))
 
 	model := ext_model.NewExtModel()
 	model.Set(userExt{key: "user"})
 	model.Set(userExt{key: "secret"})
 
-	filtered, err := modelContainer.FilterForRPC("psm.order#CreateOrder", model)
+	filtered, err := manager.ModelContainer().FilterForRPC("psm.order#CreateOrder", model)
 	if err != nil {
 		panic(err)
 	}
+
 	_, hasUser := filtered.Get("user")
 	_, hasSecret := filtered.Get("secret")
 	fmt.Println(hasUser, hasSecret)
+
+	container, _ := manager.Container("spi_container")
+	fmt.Println(container.(*service_manager.SPIContainer[string]).Implementations("risk.audit"))
 }
 ```
 
