@@ -34,10 +34,10 @@
 
 独立使用关系：
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process
-       |                 |               |             |             |
-       +-----------------+---------------+-------------+-------------+
-                         各模块都可以独立使用
+  biz_identity      biz_process      ext_model      ext_spi      ext_process      ext_interceptor
+       |                 |               |             |             |                   |
+       +-----------------+---------------+-------------+-------------+-------------------+
+                                       各模块都可以独立使用
 ```
 
 ## 目录结构
@@ -45,7 +45,7 @@
 - `biz_ctx/`：业务上下文组件占位目录
 - `biz_identity/`：业务身份抽象的独立 Go module
 - `biz_process/`：业务流程 FSM 的独立 Go module
-- `ext_interceptor/`：扩展拦截器组件占位目录
+- `ext_interceptor/`：扩展拦截器抽象的独立 Go module
 - `ext_model/`：扩展模型抽象的独立 Go module
 - `ext_process/`：扩展流程模板的独立 Go module
 - `ext_spi/`：SPI 模板抽象的独立 Go module
@@ -64,6 +64,7 @@
 - `IdentityContainer`：业务身份白名单管理
 - `ProcessContainer`：多个具名流程编排管理
 - `SPIContainer`：扩展定义到扩展实现的管理
+- `InterceptorContainer`：拦截器定义到拦截器实现的管理
 - `ModelContainer`：外调 RPC 前的 ext model 白名单裁剪
 
 文档入口：
@@ -138,6 +139,20 @@
 
 - English: [`ext_spi/README.md`](./ext_spi/README.md)
 - 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
+
+### `ext_interceptor`
+
+`ext_interceptor` 提供了一个通用拦截器模板抽象：
+
+- `Handler`
+- `Template`
+- `MatchFunc`
+- `InterceptFunc`
+
+文档入口：
+
+- English: [`ext_interceptor/README.md`](./ext_interceptor/README.md)
+- 中文: [`ext_interceptor/README-ZH.md`](./ext_interceptor/README-ZH.md)
 
 ## 快速开始
 

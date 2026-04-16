@@ -119,6 +119,19 @@ builder 默认会初始化以下标准容器：
 
 一个 `SPIContainer` 会绑定一个 `ext_spi.Template`，然后通过这个模板执行注册进去的实现。
 
+### `InterceptorContainer`
+
+`InterceptorContainer[Impl, Input, Output]` 用于按 definition key 管理 `ext_interceptor` 实现集合。
+
+- `Register(definition string, interceptor Impl) error`
+- `Replace(definition string, interceptors []Impl) error`
+- `Remove(definition string)`
+- `Interceptors(definition string) []Impl`
+- `Definitions() []string`
+- `Execute(ctx context.Context, definition string, input Input, final ext_interceptor.Handler[Input, Output]) (Output, error)`
+
+一个 `InterceptorContainer` 会绑定一个 `ext_interceptor.Template`，然后通过这个模板执行注册进去的拦截器。
+
 ### `ModelContainer`
 
 `ModelContainer` 用于管理外调 RPC 前的 ext model 白名单策略。

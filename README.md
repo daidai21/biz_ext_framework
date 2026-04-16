@@ -34,10 +34,10 @@ Those lower-level modules do not depend on each other and can still be used sepa
 
 Independent usage:
 
-  biz_identity      biz_process      ext_model      ext_spi      ext_process
-       |                 |               |             |             |
-       +-----------------+---------------+-------------+-------------+
-                         each module can be used alone
+  biz_identity      biz_process      ext_model      ext_spi      ext_process      ext_interceptor
+       |                 |               |             |             |                   |
+       +-----------------+---------------+-------------+-------------+-------------------+
+                                       each module can be used alone
 ```
 
 ## Directory Layout
@@ -45,7 +45,7 @@ Independent usage:
 - `biz_ctx/`: placeholder directory for business context components
 - `biz_identity/`: independent Go module for business identity abstractions
 - `biz_process/`: independent Go module for business process FSM
-- `ext_interceptor/`: placeholder directory for extension interceptor components
+- `ext_interceptor/`: independent Go module for extension interceptor abstractions
 - `ext_model/`: independent Go module for extension model abstractions
 - `ext_process/`: independent Go module for extension process template
 - `ext_spi/`: independent Go module for SPI template abstractions
@@ -64,6 +64,7 @@ Independent usage:
 - `IdentityContainer`: business identity whitelist management
 - `ProcessContainer`: multiple named process orchestration management
 - `SPIContainer`: extension definition to implementation management
+- `InterceptorContainer`: interceptor definition to implementation management
 - `ModelContainer`: outbound RPC ext model whitelist filtering
 
 Documentation:
@@ -138,6 +139,20 @@ Documentation:
 
 - English: [`ext_spi/README.md`](./ext_spi/README.md)
 - 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
+
+### `ext_interceptor`
+
+`ext_interceptor` provides a generic interceptor template abstraction:
+
+- `Handler`
+- `Template`
+- `MatchFunc`
+- `InterceptFunc`
+
+Documentation:
+
+- English: [`ext_interceptor/README.md`](./ext_interceptor/README.md)
+- 中文: [`ext_interceptor/README-ZH.md`](./ext_interceptor/README-ZH.md)
 
 ## Quick Start
 

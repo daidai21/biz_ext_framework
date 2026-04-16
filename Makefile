@@ -4,8 +4,9 @@ statistics_lines:
 unittest:
 	for module in $$(find . -maxdepth 2 -name go.mod | sort | xargs -n1 dirname); do \
 		echo "==> $$module"; \
-		packages=$$(cd $$module && go list ./... 2>/dev/null); \
-		if [ -n "$$packages" ]; then \
+		if [ "$$module" = "." ]; then \
+			echo "skip $$module (no packages)"; \
+		elif [ -n "$$(find $$module -name '*.go' -print -quit)" ]; then \
 			(cd $$module && go test ./...) || exit 1; \
 		else \
 			echo "skip $$module (no packages)"; \

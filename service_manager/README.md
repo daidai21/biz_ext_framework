@@ -119,6 +119,19 @@ It is intended for service-side orchestration registration, so different process
 
 One `SPIContainer` binds one `ext_spi.Template`, then executes registered implementations through that template.
 
+### `InterceptorContainer`
+
+`InterceptorContainer[Impl, Input, Output]` manages `ext_interceptor` implementations grouped by definition key.
+
+- `Register(definition string, interceptor Impl) error`
+- `Replace(definition string, interceptors []Impl) error`
+- `Remove(definition string)`
+- `Interceptors(definition string) []Impl`
+- `Definitions() []string`
+- `Execute(ctx context.Context, definition string, input Input, final ext_interceptor.Handler[Input, Output]) (Output, error)`
+
+One `InterceptorContainer` binds one `ext_interceptor.Template`, then executes registered interceptors through that template.
+
 ### `ModelContainer`
 
 `ModelContainer` manages ext model whitelist policies for outbound RPC calls.
