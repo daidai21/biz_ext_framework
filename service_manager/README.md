@@ -4,6 +4,37 @@
 
 This directory is an independent Go module.
 
+## Positioning
+
+`service_manager` is the integration layer that wires several lower-level modules together.
+
+- using `service_manager` means using `biz_identity`, `biz_process`, and `ext_model` together through one service-side management layer
+- other modules in this repository can still be used independently
+- those lower-level modules do not depend on each other and can be adopted separately based on business needs
+
+## Module Diagram
+
+```text
+                          +-------------------+
+                          |  service_manager  |
+                          |   integration     |
+                          +-------------------+
+                            /       |       \
+                           /        |        \
+                          v         v         v
+                +---------------+ +---------------+ +---------------+
+                | biz_identity  | |  biz_process  | |   ext_model   |
+                | identity wl   | | multi-process | | model filter  |
+                +---------------+ +---------------+ +---------------+
+
+Independent usage:
+
+  biz_identity      biz_process      ext_model      ext_spi      ext_process
+       |                 |               |             |             |
+       +-----------------+---------------+-------------+-------------+
+                         each module can be used alone
+```
+
 ## Core Containers
 
 ### `IdentityContainer`

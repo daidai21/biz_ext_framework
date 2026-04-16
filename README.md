@@ -4,6 +4,42 @@
 
 Components are organized by top-level directories. Some directories are already independent Go modules, and some are placeholders reserved for follow-up work.
 
+## Architecture
+
+Modules in this repository can be used in two ways:
+
+- use low-level modules independently, without pulling in other modules
+- use `service_manager` as the service-side integration layer that wires several modules together
+
+`service_manager` currently integrates:
+
+- `biz_identity`
+- `biz_process`
+- `ext_model`
+
+Those lower-level modules do not depend on each other and can still be used separately.
+
+```text
+                          +-------------------+
+                          |  service_manager  |
+                          |   integration     |
+                          +-------------------+
+                            /       |       \
+                           /        |        \
+                          v         v         v
+                +---------------+ +---------------+ +---------------+
+                | biz_identity  | |  biz_process  | |   ext_model   |
+                | identity wl   | | multi-process | | model filter  |
+                +---------------+ +---------------+ +---------------+
+
+Independent usage:
+
+  biz_identity      biz_process      ext_model      ext_spi      ext_process
+       |                 |               |             |             |
+       +-----------------+---------------+-------------+-------------+
+                         each module can be used alone
+```
+
 ## Directory Layout
 
 - `biz_ctx/`: placeholder directory for business context components
@@ -13,11 +49,25 @@ Components are organized by top-level directories. Some directories are already 
 - `ext_model/`: independent Go module for extension model abstractions
 - `ext_process/`: independent Go module for extension process template
 - `ext_spi/`: independent Go module for SPI template abstractions
-- `service_manager/`: placeholder directory for service manager components
+- `service_manager/`: independent Go module for service-side integration and container management
 - `Makefile`: repository-level helper targets
 - `go.mod`: repository-level Go module definition
 
 ## Implemented Modules
+
+### `service_manager`
+
+`service_manager` provides a service-side integration layer built on top of other reusable modules:
+
+- `IdentityContainer`: business identity whitelist management
+- `ProcessContainer`: multiple named process orchestration management
+- `SPIContainer`: extension definition to implementation management
+- `ModelContainer`: outbound RPC ext model whitelist filtering
+
+Documentation:
+
+- English: [`service_manager/README.md`](./service_manager/README.md)
+- 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
 
 ### `ext_model`
 
@@ -48,13 +98,11 @@ Documentation:
 
 ### `biz_process`
 
-`biz_process` provides an extensible FSM framework:
+`biz_process` provides process orchestration components:
 
-- `State` / `Event`
-- `Transition` (`From + Event -> To`)
-- `Guard`
-- `Action`
-- `Extension` hooks
+- FSM
+- BPMN-like serial-layer / parallel-node orchestration
+- DAG orchestration
 
 Documentation:
 

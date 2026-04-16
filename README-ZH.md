@@ -4,6 +4,42 @@
 
 组件按仓库顶层目录组织。其中一部分目录已经是独立 Go module，另一部分目录目前先作为占位，留待后续补充实现。
 
+## 架构说明
+
+仓库中的模块支持两种使用方式：
+
+- 直接单独使用底层模块，不依赖其他模块
+- 使用 `service_manager` 作为服务侧集成层，把多个模块串联起来
+
+当前 `service_manager` 集成了：
+
+- `biz_identity`
+- `biz_process`
+- `ext_model`
+
+这些底层模块彼此之间没有强依赖关系，仍然可以独立接入使用。
+
+```text
+                          +-------------------+
+                          |  service_manager  |
+                          |     集成管理层     |
+                          +-------------------+
+                            /       |       \
+                           /        |        \
+                          v         v         v
+                +---------------+ +---------------+ +---------------+
+                | biz_identity  | |  biz_process  | |   ext_model   |
+                | 身份白名单管理 | | 多流程编排管理 | | 模型白名单裁剪 |
+                +---------------+ +---------------+ +---------------+
+
+独立使用关系：
+
+  biz_identity      biz_process      ext_model      ext_spi      ext_process
+       |                 |               |             |             |
+       +-----------------+---------------+-------------+-------------+
+                         各模块都可以独立使用
+```
+
 ## 目录结构
 
 - `biz_ctx/`：业务上下文组件占位目录
@@ -13,11 +49,25 @@
 - `ext_model/`：扩展模型抽象的独立 Go module
 - `ext_process/`：扩展流程模板的独立 Go module
 - `ext_spi/`：SPI 模板抽象的独立 Go module
-- `service_manager/`：服务管理组件占位目录
+- `service_manager/`：服务侧集成与容器管理的独立 Go module
 - `Makefile`：仓库级辅助命令
 - `go.mod`：仓库级 Go module 定义
 
 ## 已实现模块
+
+### `service_manager`
+
+`service_manager` 提供了一个构建在其他复用模块之上的服务侧集成层：
+
+- `IdentityContainer`：业务身份白名单管理
+- `ProcessContainer`：多个具名流程编排管理
+- `SPIContainer`：扩展定义到扩展实现的管理
+- `ModelContainer`：外调 RPC 前的 ext model 白名单裁剪
+
+文档入口：
+
+- English: [`service_manager/README.md`](./service_manager/README.md)
+- 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
 
 ### `ext_model`
 
@@ -48,13 +98,11 @@
 
 ### `biz_process`
 
-`biz_process` 提供了一个可扩展的 FSM 框架：
+`biz_process` 提供了流程编排相关组件：
 
-- `State` / `Event`
-- `Transition`（`From + Event -> To`）
-- `Guard`
-- `Action`
-- `Extension` 钩子
+- FSM
+- BPMN-like 串行层 / 并行节点编排
+- DAG 编排
 
 文档入口：
 
