@@ -17,10 +17,12 @@ func TestRunProcessSerial(t *testing.T) {
 		order = append(order, name)
 	}
 
-	process := []Step{
-		{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return nil }},
-		{Name: "B", Task: func(ctx context.Context) error { appendOrder("B"); return nil }},
-		{Name: "C", Task: func(ctx context.Context) error { appendOrder("C"); return nil }},
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "layer-a", Nodes: []ProcessNode{TaskProcessNode{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return nil }}}},
+			{Name: "layer-b", Nodes: []ProcessNode{TaskProcessNode{Name: "B", Task: func(ctx context.Context) error { appendOrder("B"); return nil }}}},
+			{Name: "layer-c", Nodes: []ProcessNode{TaskProcessNode{Name: "C", Task: func(ctx context.Context) error { appendOrder("C"); return nil }}}},
+		},
 	}
 
 	if err := RunProcess(context.Background(), process); err != nil {
@@ -42,13 +44,15 @@ func TestRunProcessSerialWithParallelGroup(t *testing.T) {
 		counter[name]++
 	}
 
-	process := []Step{
-		{Name: "prepare", Task: func(ctx context.Context) error { inc("prepare"); return nil }},
-		{Name: "fanout", Parallel: []Step{
-			{Name: "p1", Task: func(ctx context.Context) error { inc("p1"); return nil }},
-			{Name: "p2", Task: func(ctx context.Context) error { inc("p2"); return nil }},
-		}},
-		{Name: "merge", Task: func(ctx context.Context) error { inc("merge"); return nil }},
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "prepare", Nodes: []ProcessNode{TaskProcessNode{Name: "prepare", Task: func(ctx context.Context) error { inc("prepare"); return nil }}}},
+			{Name: "fanout", Nodes: []ProcessNode{
+				TaskProcessNode{Name: "p1", Task: func(ctx context.Context) error { inc("p1"); return nil }},
+				TaskProcessNode{Name: "p2", Task: func(ctx context.Context) error { inc("p2"); return nil }},
+			}},
+			{Name: "merge", Nodes: []ProcessNode{TaskProcessNode{Name: "merge", Task: func(ctx context.Context) error { inc("merge"); return nil }}}},
+		},
 	}
 
 	if err := RunProcess(context.Background(), process); err != nil {
@@ -63,17 +67,34 @@ func TestRunProcessSerialWithParallelGroup(t *testing.T) {
 }
 
 func TestRunProcessEmpty(t *testing.T) {
-	err := RunProcess(context.Background(), nil)
+	err := RunProcess(context.Background(), Process{})
 	if !errors.Is(err, ErrEmptyProcess) {
 		t.Fatalf("expected ErrEmptyProcess, got %v", err)
 	}
 }
 
-func TestRunProcessInvalidStep(t *testing.T) {
-	process := []Step{{Name: "bad"}}
+func TestRunProcessInvalidProcess(t *testing.T) {
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "bad"},
+		},
+	}
 	err := RunProcess(context.Background(), process)
-	if !errors.Is(err, ErrInvalidStep) {
-		t.Fatalf("expected ErrInvalidStep, got %v", err)
+	if !errors.Is(err, ErrInvalidProcess) {
+		t.Fatalf("expected ErrInvalidProcess, got %v", err)
+	}
+}
+
+func TestRunProcessInvalidNilNode(t *testing.T) {
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "bad", Nodes: []ProcessNode{nil}},
+		},
+	}
+
+	err := RunProcess(context.Background(), process)
+	if !errors.Is(err, ErrInvalidProcess) {
+		t.Fatalf("expected ErrInvalidProcess, got %v", err)
 	}
 }
 
@@ -86,10 +107,12 @@ func TestRunProcessStepErrorStopsPipeline(t *testing.T) {
 		order = append(order, name)
 	}
 
-	process := []Step{
-		{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return nil }},
-		{Name: "B", Task: func(ctx context.Context) error { appendOrder("B"); return errors.New("B failed") }},
-		{Name: "C", Task: func(ctx context.Context) error { appendOrder("C"); return nil }},
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "layer-a", Nodes: []ProcessNode{TaskProcessNode{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return nil }}}},
+			{Name: "layer-b", Nodes: []ProcessNode{TaskProcessNode{Name: "B", Task: func(ctx context.Context) error { appendOrder("B"); return errors.New("B failed") }}}},
+			{Name: "layer-c", Nodes: []ProcessNode{TaskProcessNode{Name: "C", Task: func(ctx context.Context) error { appendOrder("C"); return nil }}}},
+		},
 	}
 
 	err := RunProcess(context.Background(), process)
@@ -105,19 +128,21 @@ func TestRunProcessStepErrorStopsPipeline(t *testing.T) {
 }
 
 func TestRunProcessParallelError(t *testing.T) {
-	process := []Step{
-		{Name: "fanout", Parallel: []Step{
-			{Name: "ok", Task: func(ctx context.Context) error { return nil }},
-			{Name: "bad", Task: func(ctx context.Context) error { return errors.New("branch failed") }},
-		}},
+	process := Process{
+		Layers: []ProcessLayer{
+			{Name: "fanout", Nodes: []ProcessNode{
+				TaskProcessNode{Name: "ok", Task: func(ctx context.Context) error { return nil }},
+				TaskProcessNode{Name: "bad", Task: func(ctx context.Context) error { return errors.New("branch failed") }},
+			}},
+		},
 	}
 
 	err := RunProcess(context.Background(), process)
 	if err == nil {
 		t.Fatal("expected parallel error")
 	}
-	if !strings.Contains(err.Error(), "parallel group") {
-		t.Fatalf("expected parallel group message, got %v", err)
+	if !strings.Contains(err.Error(), "parallel layer") {
+		t.Fatalf("expected parallel layer message, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "branch failed") {
 		t.Fatalf("expected branch failed message, got %v", err)

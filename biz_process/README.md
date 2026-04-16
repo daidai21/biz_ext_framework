@@ -52,20 +52,36 @@ Use `NoopExtension` as a default no-op implementation.
 
 ## BPMN-like Orchestration
 
-`bpmn.go` provides a lightweight process orchestrator configured by `var process = []Step{...}`.
+`bpmn.go` provides a lightweight process orchestrator configured by `Process -> ProcessLayer -> ProcessNode`.
 
-- top-level `[]Step` runs in serial
-- `Step.Parallel` runs branches in parallel
-- each `Step` must define exactly one mode: `Task` or `Parallel`
+- `Process.Layers` runs in serial order
+- `ProcessLayer.Nodes` runs in parallel within the same layer
+- `ProcessNode` is an interface, and `TaskProcessNode` is the default task-based implementation
 
 ```go
-process := []biz_process.Step{
-    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
-    {Name: "fanout", Parallel: []biz_process.Step{
-        {Name: "audit", Task: func(ctx context.Context) error { return nil }},
-        {Name: "notify", Task: func(ctx context.Context) error { return nil }},
-    }},
-    {Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+process := biz_process.Process{
+    Name: "order-flow",
+    Layers: []biz_process.ProcessLayer{
+        {
+            Name: "prepare",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+        {
+            Name: "fanout",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "audit", Task: func(ctx context.Context) error { return nil }},
+                biz_process.TaskProcessNode{Name: "notify", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+        {
+            Name: "finalize",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+    },
 }
 
 if err := biz_process.RunProcess(context.Background(), process); err != nil {

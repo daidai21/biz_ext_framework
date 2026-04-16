@@ -52,20 +52,36 @@ type Extension interface {
 
 ## BPMN-like 流程编排
 
-`bpmn.go` 提供了一个轻量流程编排器，可通过 `var process = []Step{...}` 配置流程。
+`bpmn.go` 提供了一个轻量流程编排器，抽象为 `Process -> ProcessLayer -> ProcessNode`。
 
-- 顶层 `[]Step` 按串行执行
-- `Step.Parallel` 内分支并行执行
-- 每个 `Step` 必须且只能配置一种模式：`Task` 或 `Parallel`
+- `Process.Layers` 按串行顺序执行
+- `ProcessLayer.Nodes` 在同一层内并行执行
+- `ProcessNode` 通过 interface 定义，`TaskProcessNode` 是默认的任务节点实现
 
 ```go
-process := []biz_process.Step{
-    {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
-    {Name: "fanout", Parallel: []biz_process.Step{
-        {Name: "audit", Task: func(ctx context.Context) error { return nil }},
-        {Name: "notify", Task: func(ctx context.Context) error { return nil }},
-    }},
-    {Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+process := biz_process.Process{
+    Name: "order-flow",
+    Layers: []biz_process.ProcessLayer{
+        {
+            Name: "prepare",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+        {
+            Name: "fanout",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "audit", Task: func(ctx context.Context) error { return nil }},
+                biz_process.TaskProcessNode{Name: "notify", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+        {
+            Name: "finalize",
+            Nodes: []biz_process.ProcessNode{
+                biz_process.TaskProcessNode{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+            },
+        },
+    },
 }
 
 if err := biz_process.RunProcess(context.Background(), process); err != nil {
