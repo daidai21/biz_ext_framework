@@ -13,23 +13,33 @@ var (
 	ErrDAGCycle   = errors.New("dag contains cycle")
 )
 
-type DAGTask func(ctx context.Context) error
+type GraphTask func(ctx context.Context) error
 
-// DAGNode describes one node in a DAG process.
-type DAGNode struct {
+// DAGTask is kept as a compatibility alias.
+type DAGTask = GraphTask
+
+// GraphNode describes one node in a DAG process.
+type GraphNode struct {
 	Name      string
 	DependsOn []string
-	Task      DAGTask
+	Task      GraphTask
+}
+
+// DAGNode is kept as a compatibility alias.
+type DAGNode = GraphNode
+
+func (n GraphNode) NodeName() string {
+	return n.Name
 }
 
 // RunDAG executes DAG nodes by dependency order.
 // Nodes in the same topological level run in parallel.
-func RunDAG(ctx context.Context, nodes []DAGNode) error {
+func RunDAG(ctx context.Context, nodes []GraphNode) error {
 	if len(nodes) == 0 {
 		return ErrEmptyDAG
 	}
 
-	index := make(map[string]DAGNode, len(nodes))
+	index := make(map[string]GraphNode, len(nodes))
 	indegree := make(map[string]int, len(nodes))
 	dependents := make(map[string][]string, len(nodes))
 
@@ -77,7 +87,7 @@ func RunDAG(ctx context.Context, nodes []DAGNode) error {
 		for _, name := range current {
 			wg.Add(1)
 			node := index[name]
-			go func(nodeName string, n DAGNode) {
+			go func(nodeName string, n GraphNode) {
 				defer wg.Done()
 				if err := n.Task(ctx); err != nil {
 					errCh <- fmt.Errorf("dag node %q failed: %w", nodeName, err)

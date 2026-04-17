@@ -9,7 +9,8 @@ This directory is an independent Go module.
 - `State` / `Event`: string-based state machine keys.
 - `Transition`: transition rule from `From + Event` to `To`.
 - `Guard`: optional pre-check function.
-- `Action`: optional business action function.
+- `Node`: common lightweight node abstraction.
+- `Action`: FSM node type for transition execution.
 - `Extension`: extension hooks around transition lifecycle.
 
 ```go
@@ -52,11 +53,11 @@ Use `NoopExtension` as a default no-op implementation.
 
 ## BPMN-like Orchestration
 
-`bpmn.go` provides a lightweight process orchestrator configured by `Process -> ProcessLayer -> ProcessNode`.
+`bpmn.go` provides a lightweight process orchestrator configured by `Process -> ProcessLayer -> Task`.
 
 - `Process.Layers` runs in serial order
-- `ProcessLayer.Nodes` runs in parallel within the same layer
-- `ProcessNode` is an interface, and `TaskProcessNode` is the default task-based implementation
+- `ProcessLayer.Nodes` runs `Task` nodes in parallel within the same layer
+- `Task` implements both `Node` and `ProcessNode`
 
 ```go
 process := biz_process.Process{
@@ -65,20 +66,20 @@ process := biz_process.Process{
         {
             Name: "prepare",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
             },
         },
         {
             Name: "fanout",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "audit", Task: func(ctx context.Context) error { return nil }},
-                biz_process.TaskProcessNode{Name: "notify", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "audit", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "notify", Task: func(ctx context.Context) error { return nil }},
             },
         },
         {
             Name: "finalize",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
             },
         },
     },
@@ -96,9 +97,10 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 - nodes run by dependency order
 - same topological level runs in parallel
 - cycle / invalid dependency detection built in
+- `GraphNode` implements `Node`
 
 ```go
-dag := []biz_process.DAGNode{
+dag := []biz_process.GraphNode{
     {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
     {Name: "audit", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
     {Name: "notify", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},

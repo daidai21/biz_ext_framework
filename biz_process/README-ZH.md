@@ -9,7 +9,8 @@
 - `State` / `Event`：基于字符串的状态机标识。
 - `Transition`：从 `From + Event` 到 `To` 的迁移规则。
 - `Guard`：可选前置校验函数。
-- `Action`：可选业务执行函数。
+- `Node`：统一的轻量节点抽象。
+- `Action`：FSM 中用于执行迁移动作的节点类型。
 - `Extension`：迁移生命周期扩展钩子。
 
 ```go
@@ -52,11 +53,11 @@ type Extension interface {
 
 ## BPMN-like 流程编排
 
-`bpmn.go` 提供了一个轻量流程编排器，抽象为 `Process -> ProcessLayer -> ProcessNode`。
+`bpmn.go` 提供了一个轻量流程编排器，抽象为 `Process -> ProcessLayer -> Task`。
 
 - `Process.Layers` 按串行顺序执行
-- `ProcessLayer.Nodes` 在同一层内并行执行
-- `ProcessNode` 通过 interface 定义，`TaskProcessNode` 是默认的任务节点实现
+- `ProcessLayer.Nodes` 在同一层内并行执行 `Task`
+- `Task` 同时实现了 `Node` 和 `ProcessNode`
 
 ```go
 process := biz_process.Process{
@@ -65,20 +66,20 @@ process := biz_process.Process{
         {
             Name: "prepare",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "prepare", Task: func(ctx context.Context) error { return nil }},
             },
         },
         {
             Name: "fanout",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "audit", Task: func(ctx context.Context) error { return nil }},
-                biz_process.TaskProcessNode{Name: "notify", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "audit", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "notify", Task: func(ctx context.Context) error { return nil }},
             },
         },
         {
             Name: "finalize",
             Nodes: []biz_process.ProcessNode{
-                biz_process.TaskProcessNode{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
+                biz_process.Task{Name: "finalize", Task: func(ctx context.Context) error { return nil }},
             },
         },
     },
@@ -96,9 +97,10 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 - 节点按依赖顺序执行
 - 同一拓扑层级会并行执行
 - 内置环检测与非法依赖校验
+- `GraphNode` 实现了 `Node`
 
 ```go
-dag := []biz_process.DAGNode{
+dag := []biz_process.GraphNode{
     {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
     {Name: "audit", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},
     {Name: "notify", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { return nil }},

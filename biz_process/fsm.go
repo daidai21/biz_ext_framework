@@ -19,6 +19,10 @@ type Guard func(ctx context.Context, from State, event Event, payload any) error
 
 type Action func(ctx context.Context, from State, to State, event Event, payload any) error
 
+func (Action) NodeName() string {
+	return "action"
+}
+
 type Transition struct {
 	From   State
 	Event  Event

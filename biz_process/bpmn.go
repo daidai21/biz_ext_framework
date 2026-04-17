@@ -28,23 +28,26 @@ type ProcessLayer struct {
 	Nodes []ProcessNode
 }
 
-// ProcessNode is one executable node inside a process layer.
+// ProcessNode is one executable BPMN node inside a process layer.
 type ProcessNode interface {
-	NodeName() string
+	Node
 	Run(ctx context.Context) error
 }
 
-// TaskProcessNode is the default ProcessNode implementation backed by TaskFunc.
-type TaskProcessNode struct {
+// Task is the default BPMN node implementation backed by TaskFunc.
+type Task struct {
 	Name string
 	Task TaskFunc
 }
 
-func (n TaskProcessNode) NodeName() string {
+// TaskProcessNode is kept as a compatibility alias.
+type TaskProcessNode = Task
+
+func (n Task) NodeName() string {
 	return n.Name
 }
 
-func (n TaskProcessNode) Run(ctx context.Context) error {
+func (n Task) Run(ctx context.Context) error {
 	if n.Task == nil {
 		return fmt.Errorf("%w: node %q task is required", ErrInvalidProcess, n.Name)
 	}

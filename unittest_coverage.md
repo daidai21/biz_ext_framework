@@ -1,13 +1,13 @@
 # Unit Test Coverage
 
-Generated at: 2026-04-16 18:36:54 +0800
+Generated at: 2026-04-17 17:01:52 +0800
 
 | Module | Coverage | Profile |
 | --- | --- | --- |
 | biz_ctx | 81.6% | `.coverage/biz_ctx.cover.out` |
 | biz_identity | 100.0% | `.coverage/biz_identity.cover.out` |
 | biz_observation | 89.2% | `.coverage/biz_observation.cover.out` |
-| biz_process | 94.4% | `.coverage/biz_process.cover.out` |
+| biz_process | 94.5% | `.coverage/biz_process.cover.out` |
 | ext_interceptor | 100.0% | `.coverage/ext_interceptor.cover.out` |
 | ext_model | 90.9% | `.coverage/ext_model.cover.out` |
 | ext_process | 98.3% | `.coverage/ext_process.cover.out` |
@@ -16,4 +16,4 @@ Generated at: 2026-04-16 18:36:54 +0800
 
 ## Overall
 
-- Project coverage total: 77.6%
+- Project coverage total: 77.7%

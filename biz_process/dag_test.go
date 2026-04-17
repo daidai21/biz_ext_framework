@@ -17,7 +17,7 @@ func TestRunDAGSerialChain(t *testing.T) {
 		order = append(order, name)
 	}
 
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return nil }},
 		{Name: "B", DependsOn: []string{"A"}, Task: func(ctx context.Context) error { appendOrder("B"); return nil }},
 		{Name: "C", DependsOn: []string{"B"}, Task: func(ctx context.Context) error { appendOrder("C"); return nil }},
@@ -41,7 +41,7 @@ func TestRunDAGParallelFanoutJoin(t *testing.T) {
 		counter[name]++
 	}
 
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "prepare", Task: func(ctx context.Context) error { inc("prepare"); return nil }},
 		{Name: "p1", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { inc("p1"); return nil }},
 		{Name: "p2", DependsOn: []string{"prepare"}, Task: func(ctx context.Context) error { inc("p2"); return nil }},
@@ -67,7 +67,7 @@ func TestRunDAGEmpty(t *testing.T) {
 }
 
 func TestRunDAGInvalidDependency(t *testing.T) {
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "A", DependsOn: []string{"X"}, Task: func(ctx context.Context) error { return nil }},
 	}
 	err := RunDAG(context.Background(), dag)
@@ -77,7 +77,7 @@ func TestRunDAGInvalidDependency(t *testing.T) {
 }
 
 func TestRunDAGDuplicateName(t *testing.T) {
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "A", Task: func(ctx context.Context) error { return nil }},
 		{Name: "A", Task: func(ctx context.Context) error { return nil }},
 	}
@@ -88,7 +88,7 @@ func TestRunDAGDuplicateName(t *testing.T) {
 }
 
 func TestRunDAGCycle(t *testing.T) {
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "A", DependsOn: []string{"B"}, Task: func(ctx context.Context) error { return nil }},
 		{Name: "B", DependsOn: []string{"A"}, Task: func(ctx context.Context) error { return nil }},
 	}
@@ -107,7 +107,7 @@ func TestRunDAGTaskErrorStopsDownstream(t *testing.T) {
 		order = append(order, name)
 	}
 
-	dag := []DAGNode{
+	dag := []GraphNode{
 		{Name: "A", Task: func(ctx context.Context) error { appendOrder("A"); return errors.New("A failed") }},
 		{Name: "B", DependsOn: []string{"A"}, Task: func(ctx context.Context) error { appendOrder("B"); return nil }},
 	}
