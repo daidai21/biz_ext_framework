@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	ErrInvalidComponentName = errors.New("invalid component name")
-	ErrNilProvider          = errors.New("nil component provider")
-	ErrComponentNotFound    = errors.New("component not found")
-	ErrSessionRequired      = errors.New("session is required")
-	ErrCircularDependency   = errors.New("circular component dependency")
+	ErrInvalidComponentName  = errors.New("invalid component name")
+	ErrNilProvider           = errors.New("nil component provider")
+	ErrComponentNotFound     = errors.New("component not found")
+	ErrSessionRequired       = errors.New("session is required")
+	ErrCircularDependency    = errors.New("circular component dependency")
+	ErrComponentTypeMismatch = errors.New("component type mismatch")
 )
 
 type Scope string
@@ -26,15 +27,42 @@ const (
 	SessionScope Scope = "SESSION"
 )
 
-type Provider func(ctx context.Context, resolver Resolver) (any, error)
+type Key[T any] struct {
+	name  string
+	scope Scope
+}
+
+func ServiceKey[T any](name string) Key[T] {
+	return Key[T]{
+		name:  name,
+		scope: ServiceScope,
+	}
+}
+
+func SessionKey[T any](name string) Key[T] {
+	return Key[T]{
+		name:  name,
+		scope: SessionScope,
+	}
+}
+
+func (k Key[T]) Name() string {
+	return k.name
+}
+
+func (k Key[T]) Scope() Scope {
+	return k.scope
+}
+
+type Provider[T any] func(ctx context.Context, resolver Resolver) (T, error)
 
 type Resolver interface {
-	Resolve(ctx context.Context, name string) (any, error)
+	ResolveAny(ctx context.Context, name string) (any, error)
 }
 
 type definition struct {
 	scope    Scope
-	provider Provider
+	provider func(ctx context.Context, resolver Resolver) (any, error)
 }
 
 type inflightBuild struct {
@@ -63,39 +91,86 @@ func NewContainer() *Container {
 	return &Container{}
 }
 
-func (c *Container) Register(name string, scope Scope, provider Provider) error {
-	if name == "" {
-		return ErrInvalidComponentName
+func Register[T any](container *Container, key Key[T], provider Provider[T]) error {
+	if container == nil {
+		return ErrNilProvider
 	}
 	if provider == nil {
 		return ErrNilProvider
 	}
-	if scope != ServiceScope && scope != SessionScope {
-		return fmt.Errorf("unsupported component scope: %q", scope)
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.definitions == nil {
-		c.definitions = make(map[string]definition)
-	}
-	c.definitions[name] = definition{
-		scope:    scope,
-		provider: provider,
-	}
-	return nil
+	return container.register(key.name, key.scope, func(ctx context.Context, resolver Resolver) (any, error) {
+		return provider(ctx, resolver)
+	})
 }
 
-func (c *Container) RegisterService(name string, provider Provider) error {
-	return c.Register(name, ServiceScope, provider)
+func RegisterService[T any](container *Container, key Key[T], provider Provider[T]) error {
+	if key.scope != ServiceScope {
+		return fmt.Errorf("component %q is not a service scope key", key.name)
+	}
+	return Register(container, key, provider)
 }
 
-func (c *Container) RegisterSession(name string, provider Provider) error {
-	return c.Register(name, SessionScope, provider)
+func RegisterSession[T any](container *Container, key Key[T], provider Provider[T]) error {
+	if key.scope != SessionScope {
+		return fmt.Errorf("component %q is not a session scope key", key.name)
+	}
+	return Register(container, key, provider)
 }
 
-func (c *Container) Resolve(ctx context.Context, name string) (any, error) {
+func Resolve[T any](ctx context.Context, resolver Resolver, key Key[T]) (T, error) {
+	var zero T
+	if resolver == nil {
+		return zero, fmt.Errorf("%w: %q", ErrComponentNotFound, key.name)
+	}
+
+	value, err := resolver.ResolveAny(ctx, key.name)
+	if err != nil {
+		return zero, err
+	}
+	typed, ok := value.(T)
+	if !ok {
+		return zero, fmt.Errorf("%w: %q", ErrComponentTypeMismatch, key.name)
+	}
+	return typed, nil
+}
+
+func ServiceObject[T any](container *Container, key Key[T]) (T, bool) {
+	var zero T
+	if container == nil {
+		return zero, false
+	}
+	value, ok := container.serviceObjectAny(key.name)
+	if !ok {
+		return zero, false
+	}
+	typed, ok := value.(T)
+	if !ok {
+		return zero, false
+	}
+	return typed, true
+}
+
+func SessionObject[T any](container *Container, sessionID string, key Key[T]) (T, bool) {
+	var zero T
+	if container == nil {
+		return zero, false
+	}
+	value, ok := container.sessionObjectAny(sessionID, key.name)
+	if !ok {
+		return zero, false
+	}
+	typed, ok := value.(T)
+	if !ok {
+		return zero, false
+	}
+	return typed, true
+}
+
+func (c *Container) RegisterAny(name string, scope Scope, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
+	return c.register(name, scope, provider)
+}
+
+func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 	if name == "" {
 		return nil, ErrInvalidComponentName
 	}
@@ -152,16 +227,12 @@ func (c *Container) Resolve(ctx context.Context, name string) (any, error) {
 	return value, buildErr
 }
 
-func (c *Container) ServiceObject(name string) (any, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.cachedObjectLocked(ServiceScope, "", name)
+func (c *Container) ServiceObjectAny(name string) (any, bool) {
+	return c.serviceObjectAny(name)
 }
 
-func (c *Container) SessionObject(sessionID, name string) (any, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.cachedObjectLocked(SessionScope, sessionID, name)
+func (c *Container) SessionObjectAny(sessionID, name string) (any, bool) {
+	return c.sessionObjectAny(sessionID, name)
 }
 
 func (c *Container) ServiceObjects() map[string]any {
@@ -238,6 +309,30 @@ func (c *Container) ClearSession(sessionID string) {
 	delete(c.sessionObjects, sessionID)
 }
 
+func (c *Container) register(name string, scope Scope, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
+	if name == "" {
+		return ErrInvalidComponentName
+	}
+	if provider == nil {
+		return ErrNilProvider
+	}
+	if scope != ServiceScope && scope != SessionScope {
+		return fmt.Errorf("unsupported component scope: %q", scope)
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.definitions == nil {
+		c.definitions = make(map[string]definition)
+	}
+	c.definitions[name] = definition{
+		scope:    scope,
+		provider: provider,
+	}
+	return nil
+}
+
 func (c *Container) resolveKey(ctx context.Context, name string, scope Scope) (key string, sessionID string, err error) {
 	if scope == ServiceScope {
 		return "service:" + name, "", nil
@@ -272,6 +367,18 @@ func (c *Container) cachedObjectLocked(scope Scope, sessionID, name string) (any
 	default:
 		return nil, false
 	}
+}
+
+func (c *Container) serviceObjectAny(name string) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.cachedObjectLocked(ServiceScope, "", name)
+}
+
+func (c *Container) sessionObjectAny(sessionID, name string) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.cachedObjectLocked(SessionScope, sessionID, name)
 }
 
 func (c *Container) storeObjectLocked(scope Scope, sessionID, name string, value any) {

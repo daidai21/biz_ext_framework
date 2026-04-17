@@ -20,39 +20,35 @@ func NewComponentContainer(ctxContainer *CtxContainer) *ComponentContainer {
 	}
 }
 
-func (c *ComponentContainer) Register(name string, scope biz_component.Scope, provider biz_component.Provider) error {
-	return c.container.Register(name, scope, provider)
+func (c *ComponentContainer) Container() *biz_component.Container {
+	return c.container
 }
 
-func (c *ComponentContainer) RegisterService(name string, provider biz_component.Provider) error {
-	return c.container.RegisterService(name, provider)
+func (c *ComponentContainer) RegisterAny(name string, scope biz_component.Scope, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
+	return c.container.RegisterAny(name, scope, provider)
 }
 
-func (c *ComponentContainer) RegisterSession(name string, provider biz_component.Provider) error {
-	return c.container.RegisterSession(name, provider)
+func (c *ComponentContainer) ResolveAny(ctx context.Context, name string) (any, error) {
+	return c.container.ResolveAny(ctx, name)
 }
 
-func (c *ComponentContainer) Resolve(ctx context.Context, name string) (any, error) {
-	return c.container.Resolve(ctx, name)
-}
-
-func (c *ComponentContainer) ResolveInSession(ctx context.Context, sessionID, name string) (any, error) {
+func (c *ComponentContainer) ResolveAnyInSession(ctx context.Context, sessionID, name string) (any, error) {
 	if c.ctxContainer != nil {
 		sessionCtx, err := c.ctxContainer.WithSession(ctx, sessionID)
 		if err != nil {
 			return nil, err
 		}
-		return c.container.Resolve(sessionCtx, name)
+		return c.container.ResolveAny(sessionCtx, name)
 	}
-	return c.container.Resolve(ctx, name)
+	return c.container.ResolveAny(ctx, name)
 }
 
 func (c *ComponentContainer) ServiceObject(name string) (any, bool) {
-	return c.container.ServiceObject(name)
+	return c.container.ServiceObjectAny(name)
 }
 
 func (c *ComponentContainer) SessionObject(sessionID, name string) (any, bool) {
-	return c.container.SessionObject(sessionID, name)
+	return c.container.SessionObjectAny(sessionID, name)
 }
 
 func (c *ComponentContainer) ServiceObjects() map[string]any {

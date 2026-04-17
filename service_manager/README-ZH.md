@@ -82,16 +82,17 @@ builder 默认会初始化以下标准容器：
 
 `ComponentContainer` 用于管理 `biz_component` 的 IOC 对象，既支持服务级，也支持 Session 级。
 
-- `Register(name string, scope biz_component.Scope, provider biz_component.Provider) error`
-- `RegisterService(name string, provider biz_component.Provider) error`
-- `RegisterSession(name string, provider biz_component.Provider) error`
-- `Resolve(ctx context.Context, name string) (any, error)`
-- `ResolveInSession(ctx context.Context, sessionID, name string) (any, error)`
+- `Container() *biz_component.Container`
+- `RegisterAny(name string, scope biz_component.Scope, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `ResolveAny(ctx context.Context, name string) (any, error)`
+- `ResolveAnyInSession(ctx context.Context, sessionID, name string) (any, error)`
 - `ServiceObject(name string) (any, bool)`
 - `SessionObject(sessionID, name string) (any, bool)`
 - `DeleteService(name string)`
 - `DeleteSessionObject(sessionID, name string)`
 - `ClearSession(sessionID string)`
+
+带类型的初始化和获取，应该通过 `Container()` 配合 `biz_component` 的泛型 helper 来完成。
 
 ### `CtxContainer`
 

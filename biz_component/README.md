@@ -9,14 +9,15 @@ This directory is an independent Go module.
 - `Container`: the IOC container
 - `ServiceScope`: service instance level singleton objects
 - `SessionScope`: session level objects isolated by `biz_ctx.BizSessionId`
-- `Provider`: lazy object constructor with dependency resolution support
+- `Key[T]`: typed component key
+- `Provider[T]`: typed lazy object constructor with dependency resolution support
 - `Resolver`: dependency lookup interface used inside providers
 
 ## Behavior
 
 - service-scope objects are created once per container instance
 - session-scope objects are created once per session id
-- providers can resolve other components through `Resolver`
+- providers resolve other components through typed generic helpers
 - circular dependencies are detected
 - the container is concurrency-safe
 
@@ -35,21 +36,23 @@ import (
 
 func main() {
 	container := biz_component.NewContainer()
+	configKey := biz_component.ServiceKey[string]("config")
+	componentKey := biz_component.SessionKey[string]("order_component")
 
-	_ = container.RegisterService("config", func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
+	_ = biz_component.RegisterService(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil
 	})
-	_ = container.RegisterSession("order_component", func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
-		cfg, err := resolver.Resolve(ctx, "config")
+	_ = biz_component.RegisterSession(container, componentKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+		cfg, err := biz_component.Resolve(ctx, resolver, configKey)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		session, _ := biz_ctx.BizSessionFromContext(ctx)
-		return fmt.Sprintf("%s:%s", cfg.(string), session.BizSessionId()), nil
+		return fmt.Sprintf("%s:%s", cfg, session.BizSessionId()), nil
 	})
 
 	ctx := biz_ctx.WithBizSession(context.Background(), biz_ctx.NewBizSession("s1"))
-	value, err := container.Resolve(ctx, "order_component")
+	value, err := biz_component.Resolve(ctx, container, componentKey)
 	if err != nil {
 		panic(err)
 	}

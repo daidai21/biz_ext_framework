@@ -14,26 +14,29 @@ func TestComponentContainerResolveInSession(t *testing.T) {
 	}
 
 	container := NewComponentContainer(ctxContainer)
-	if err := container.RegisterService("config", func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
+	configKey := biz_component.ServiceKey[string]("config")
+	componentKey := biz_component.SessionKey[string]("component")
+
+	if err := biz_component.RegisterService(container.Container(), configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil
 	}); err != nil {
 		t.Fatalf("register service failed: %v", err)
 	}
-	if err := container.RegisterSession("component", func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
-		cfg, err := resolver.Resolve(ctx, "config")
+	if err := biz_component.RegisterSession(container.Container(), componentKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+		cfg, err := biz_component.Resolve(ctx, resolver, configKey)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		session, ok := ctxContainer.SessionFromContext(ctx)
 		if !ok {
 			t.Fatal("expected session in ctx")
 		}
-		return cfg.(string) + ":" + session.BizSessionId(), nil
+		return cfg + ":" + session.BizSessionId(), nil
 	}); err != nil {
 		t.Fatalf("register session failed: %v", err)
 	}
 
-	value, err := container.ResolveInSession(context.Background(), "s1", "component")
+	value, err := container.ResolveAnyInSession(context.Background(), "s1", componentKey.Name())
 	if err != nil {
 		t.Fatalf("resolve in session failed: %v", err)
 	}
@@ -44,18 +47,20 @@ func TestComponentContainerResolveInSession(t *testing.T) {
 
 func TestComponentContainerServiceObject(t *testing.T) {
 	container := NewComponentContainer(nil)
-	if err := container.RegisterService("logger", func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
+	loggerKey := biz_component.ServiceKey[string]("logger")
+
+	if err := biz_component.RegisterService(container.Container(), loggerKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "logger", nil
 	}); err != nil {
 		t.Fatalf("register service failed: %v", err)
 	}
 
-	if _, err := container.Resolve(context.Background(), "logger"); err != nil {
+	if _, err := biz_component.Resolve(context.Background(), container.Container(), loggerKey); err != nil {
 		t.Fatalf("resolve failed: %v", err)
 	}
 
-	value, ok := container.ServiceObject("logger")
-	if !ok || value.(string) != "logger" {
+	value, ok := biz_component.ServiceObject(container.Container(), loggerKey)
+	if !ok || value != "logger" {
 		t.Fatalf("unexpected service object: %v %v", value, ok)
 	}
 }

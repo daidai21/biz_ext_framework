@@ -83,16 +83,17 @@ The builder creates these standard containers by default:
 
 `ComponentContainer` manages `biz_component` IOC objects for both service scope and session scope.
 
-- `Register(name string, scope biz_component.Scope, provider biz_component.Provider) error`
-- `RegisterService(name string, provider biz_component.Provider) error`
-- `RegisterSession(name string, provider biz_component.Provider) error`
-- `Resolve(ctx context.Context, name string) (any, error)`
-- `ResolveInSession(ctx context.Context, sessionID, name string) (any, error)`
+- `Container() *biz_component.Container`
+- `RegisterAny(name string, scope biz_component.Scope, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `ResolveAny(ctx context.Context, name string) (any, error)`
+- `ResolveAnyInSession(ctx context.Context, sessionID, name string) (any, error)`
 - `ServiceObject(name string) (any, bool)`
 - `SessionObject(sessionID, name string) (any, bool)`
 - `DeleteService(name string)`
 - `DeleteSessionObject(sessionID, name string)`
 - `ClearSession(sessionID string)`
+
+Typed initialization and lookup should use the generic helpers from `biz_component` together with `Container()`.
 
 ### `CtxContainer`
 
