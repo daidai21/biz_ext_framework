@@ -99,6 +99,35 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 - cycle / invalid dependency detection built in
 - `GraphNode` implements `Node`
 
+A common pattern is to split remote calls, business logic, and view generation into independent nodes so each branch can move forward as soon as its dependencies are ready instead of blocking the whole request serially.
+
+```mermaid
+flowchart LR
+    product["product
+    - remote call flow
+    - business logic
+    - view logic"]
+    user["user
+    - remote call flow
+    - business logic
+    - view logic"]
+    member["member
+    - depends on: product + user
+    - remote call flow
+    - business logic
+    - view logic"]
+
+    product --> member
+    user --> member
+```
+
+In this DAG:
+
+- `product` and `user` can start remote calls, business computation, and view chunk generation in parallel
+- `member` starts only after both `product` and `user` finish the required upstream dependencies
+- while `member` is still waiting on remote calls, `product` and `user` can already continue rendering their view output
+- with streaming output, `product` and `user` chunks can be returned to the client and rendered before `member` completes, minimizing end-to-end latency
+
 ```go
 dag := []biz_process.GraphNode{
     {Name: "prepare", Task: func(ctx context.Context) error { return nil }},

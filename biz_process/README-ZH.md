@@ -99,6 +99,35 @@ if err := biz_process.RunProcess(context.Background(), process); err != nil {
 - 内置环检测与非法依赖校验
 - `GraphNode` 实现了 `Node`
 
+典型场景是把可并行的外调、业务逻辑、视图逻辑拆到独立节点，在依赖满足后立刻往下推进，而不是串行阻塞整个请求。
+
+```mermaid
+flowchart LR
+    product["product
+    - 外调流程
+    - 业务逻辑
+    - 视图逻辑"]
+    user["user
+    - 外调流程
+    - 业务逻辑
+    - 视图逻辑"]
+    member["member
+    - 依赖: product + user
+    - 外调流程
+    - 业务逻辑
+    - 视图逻辑"]
+
+    product --> member
+    user --> member
+```
+
+在这个 DAG 中：
+
+- `product` 和 `user` 可以先并行发起外调、执行业务计算、生成视图 Chunk
+- `member` 只在 `product` 和 `user` 的依赖结果就绪后再启动
+- 当 `member` 仍在外调时，`product` 和 `user` 的视图渲染可以继续推进
+- 如果接入流式输出，`product` 和 `user` 的 Chunk 甚至可以先返回到端上并开始客户端渲染，从而压缩整体链路耗时
+
 ```go
 dag := []biz_process.GraphNode{
     {Name: "prepare", Task: func(ctx context.Context) error { return nil }},
