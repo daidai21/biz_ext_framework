@@ -23,6 +23,14 @@ func(ctx context.Context, extProcessImpls []Impl, input Input, mode Mode) ([]Out
 
 通过 `NewTemplate(match, process)` 构造。
 
+### `DefinitionAction`
+
+`ext_process` 也提供了定义级别的合并动作，用于管理同一个 definition 下的实现列表：
+
+- `Append`：把新实现追加到现有流程后面
+- `Skip`：如果该 definition 已经存在流程，则跳过本次新增
+- `Overwrite`：使用新实现覆写已有流程
+
 ### `ProcessFunc`
 
 ```go

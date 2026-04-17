@@ -169,6 +169,8 @@ One `SPIContainer` binds one `ext_spi.Template`, then executes registered implem
 `ExtProcessContainer[Impl, Input, Output]` manages `ext_process` implementations grouped by definition key.
 
 - `Register(definition string, impl Impl) error`
+- `RegisterWithAction(definition string, impl Impl, action ext_process.DefinitionAction) error`
+- `Apply(definition string, impls []Impl, action ext_process.DefinitionAction) error`
 - `Replace(definition string, impls []Impl) error`
 - `Remove(definition string)`
 - `Implementations(definition string) []Impl`
@@ -176,6 +178,12 @@ One `SPIContainer` binds one `ext_spi.Template`, then executes registered implem
 - `Execute(ctx context.Context, definition string, input Input, mode ext_process.Mode) ([]Output, error)`
 
 One `ExtProcessContainer` binds one `ext_process.Template`, then executes registered implementations through that template.
+
+Definition management supports three actions:
+
+- `Append`: default behavior, append incoming implementations after the current flow
+- `Skip`: ignore incoming implementations when the definition already exists
+- `Overwrite`: replace the current flow with the incoming implementation list
 
 ### `InterceptorContainer`
 

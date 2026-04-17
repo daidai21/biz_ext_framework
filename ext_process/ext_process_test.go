@@ -182,3 +182,47 @@ func TestTemplateParallelJoinError(t *testing.T) {
 		t.Fatalf("expected joined handle failed error, got %v", err)
 	}
 }
+
+func TestMergeImplementationsAppend(t *testing.T) {
+	merged, err := MergeImplementations([]string{"a"}, []string{"b", "c"}, Append)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 3 || merged[0] != "a" || merged[1] != "b" || merged[2] != "c" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+}
+
+func TestMergeImplementationsSkip(t *testing.T) {
+	merged, err := MergeImplementations([]string{"a"}, []string{"b"}, Skip)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 1 || merged[0] != "a" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+
+	merged, err = MergeImplementations(nil, []string{"b"}, Skip)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 1 || merged[0] != "b" {
+		t.Fatalf("unexpected merged result without existing: %#v", merged)
+	}
+}
+
+func TestMergeImplementationsOverwrite(t *testing.T) {
+	merged, err := MergeImplementations([]string{"a"}, []string{"b", "c"}, Overwrite)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 2 || merged[0] != "b" || merged[1] != "c" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+}
+
+func TestMergeImplementationsInvalidAction(t *testing.T) {
+	if _, err := MergeImplementations([]string{"a"}, []string{"b"}, DefinitionAction("UNKNOWN")); err == nil {
+		t.Fatal("expected invalid action error")
+	}
+}

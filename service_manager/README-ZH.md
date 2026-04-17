@@ -168,6 +168,8 @@ builder 默认会初始化以下标准容器：
 `ExtProcessContainer[Impl, Input, Output]` 用于按 definition key 管理 `ext_process` 实现集合。
 
 - `Register(definition string, impl Impl) error`
+- `RegisterWithAction(definition string, impl Impl, action ext_process.DefinitionAction) error`
+- `Apply(definition string, impls []Impl, action ext_process.DefinitionAction) error`
 - `Replace(definition string, impls []Impl) error`
 - `Remove(definition string)`
 - `Implementations(definition string) []Impl`
@@ -175,6 +177,12 @@ builder 默认会初始化以下标准容器：
 - `Execute(ctx context.Context, definition string, input Input, mode ext_process.Mode) ([]Output, error)`
 
 一个 `ExtProcessContainer` 会绑定一个 `ext_process.Template`，然后通过这个模板执行注册进去的实现。
+
+流程定义管理支持三种动作：
+
+- `Append`：默认行为，把新实现追加到现有流程后
+- `Skip`：若 definition 已存在流程，则忽略新的实现
+- `Overwrite`：用新的实现列表整体覆写原流程
 
 ### `InterceptorContainer`
 

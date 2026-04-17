@@ -18,6 +18,18 @@ const (
 	Parallel Mode = "PARALLEL"
 )
 
+// DefinitionAction defines how incoming implementations change one ext process definition.
+type DefinitionAction string
+
+const (
+	// Append appends incoming implementations after existing ones.
+	Append DefinitionAction = "APPEND"
+	// Skip keeps existing implementations and ignores incoming ones when the definition already exists.
+	Skip DefinitionAction = "SKIP"
+	// Overwrite replaces existing implementations with incoming ones.
+	Overwrite DefinitionAction = "OVERWRITE"
+)
+
 // MatchFunc defines whether an implementation should join current process call.
 type MatchFunc[Impl any, Input any] func(ctx context.Context, impl Impl, input Input) (bool, error)
 
@@ -130,4 +142,45 @@ func normalizeMode(mode Mode) Mode {
 		return Serial
 	}
 	return mode
+}
+
+// Validate checks whether the definition action is supported.
+func (a DefinitionAction) Validate() error {
+	switch a {
+	case Append, Skip, Overwrite:
+		return nil
+	default:
+		return fmt.Errorf("unsupported ext process definition action: %q", string(a))
+	}
+}
+
+func normalizeDefinitionAction(action DefinitionAction) DefinitionAction {
+	if action == "" {
+		return Append
+	}
+	return action
+}
+
+// MergeImplementations applies the action to existing and incoming implementations.
+func MergeImplementations[Impl any](existing []Impl, incoming []Impl, action DefinitionAction) ([]Impl, error) {
+	action = normalizeDefinitionAction(action)
+	if err := action.Validate(); err != nil {
+		return nil, err
+	}
+
+	switch action {
+	case Append:
+		merged := append([]Impl(nil), existing...)
+		merged = append(merged, incoming...)
+		return merged, nil
+	case Skip:
+		if len(existing) > 0 {
+			return append([]Impl(nil), existing...), nil
+		}
+		return append([]Impl(nil), incoming...), nil
+	case Overwrite:
+		return append([]Impl(nil), incoming...), nil
+	default:
+		return nil, fmt.Errorf("unsupported ext process definition action: %q", action)
+	}
 }

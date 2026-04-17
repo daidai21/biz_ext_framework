@@ -23,6 +23,14 @@ func(ctx context.Context, extProcessImpls []Impl, input Input, mode Mode) ([]Out
 
 Build it with `NewTemplate(match, process)`.
 
+### `DefinitionAction`
+
+`ext_process` also provides definition-level merge actions for managing implementation lists under one definition:
+
+- `Append`: append incoming implementations after the current flow
+- `Skip`: ignore incoming implementations when the definition already has a flow
+- `Overwrite`: replace the current flow with incoming implementations
+
 ### `ProcessFunc`
 
 ```go
