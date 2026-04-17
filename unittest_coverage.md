@@ -1,6 +1,6 @@
 # Unit Test Coverage
 
-Generated at: 2026-04-17 17:39:25 +0800
+Generated at: 2026-04-17 17:43:20 +0800
 
 | Module | Coverage | Profile |
 | --- | --- | --- |
@@ -11,10 +11,10 @@ Generated at: 2026-04-17 17:39:25 +0800
 | biz_process | 97.9% | `.coverage/biz_process.cover.out` |
 | ext_interceptor | 100.0% | `.coverage/ext_interceptor.cover.out` |
 | ext_model | 98.2% | `.coverage/ext_model.cover.out` |
-| ext_process | 97.4% | `.coverage/ext_process.cover.out` |
+| ext_process | 98.1% | `.coverage/ext_process.cover.out` |
 | ext_spi | 100.0% | `.coverage/ext_spi.cover.out` |
 | service_manager | 91.4% | `.coverage/service_manager.cover.out` |
 
 ## Overall
 
-- Project coverage total: 94.9%
+- Project coverage total: 95.0%
