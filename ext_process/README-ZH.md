@@ -31,6 +31,27 @@ func(ctx context.Context, extProcessImpls []Impl, input Input, mode Mode) ([]Out
 - `Skip`：如果该 definition 已经存在流程，则跳过本次新增
 - `Overwrite`：使用新实现覆写已有流程
 
+### `Aspect`
+
+如果不使用 `service_manager`，业务侧也可以直接把扩展流程绑定到 `context.Context`，然后在函数开始处调用：
+
+```go
+defer ext_process.Aspect(ctx, input)
+```
+
+常见写法如下：
+
+```go
+ctx = ext_process.BindAspect(ctx, template, extProcessImpls, ext_process.Serial)
+
+func Handle(ctx context.Context, input OrderInput) error {
+    defer ext_process.Aspect(ctx, input)
+    return nil
+}
+```
+
+适合把一些统一的补充流程挂到业务函数尾部执行，而不依赖 `service_manager` 的容器管理。
+
 ### `ProcessFunc`
 
 ```go

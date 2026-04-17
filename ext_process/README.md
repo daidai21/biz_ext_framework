@@ -31,6 +31,27 @@ Build it with `NewTemplate(match, process)`.
 - `Skip`: ignore incoming implementations when the definition already has a flow
 - `Overwrite`: replace the current flow with incoming implementations
 
+### `Aspect`
+
+If you do not use `service_manager`, business code can still bind one ext process into `context.Context` and trigger it at the beginning of a function with:
+
+```go
+defer ext_process.Aspect(ctx, input)
+```
+
+Typical usage:
+
+```go
+ctx = ext_process.BindAspect(ctx, template, extProcessImpls, ext_process.Serial)
+
+func Handle(ctx context.Context, input OrderInput) error {
+    defer ext_process.Aspect(ctx, input)
+    return nil
+}
+```
+
+This is useful when you want a lightweight tail-executed extension flow without depending on `service_manager`.
+
 ### `ProcessFunc`
 
 ```go
