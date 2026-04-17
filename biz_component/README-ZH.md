@@ -12,6 +12,7 @@
 - `Key[T]`：带类型的组件 key
 - `Provider[T]`：支持依赖解析的泛型延迟构造函数
 - `Resolver`：Provider 内部用于查找依赖对象的接口
+- `Namespace`：组件所属分层命名空间
 
 ## 行为说明
 
@@ -19,7 +20,31 @@
 - Session 级对象会按 session id 分别构建
 - Provider 内部通过泛型 helper 解析依赖组件
 - 支持循环依赖检测
+- 支持分层 namespace 依赖约束
 - 容器是并发安全的
+
+## Namespace 分层
+
+`biz_component` 提供以下 namespace：
+
+- `infra`
+- `repository`
+- `service`
+- `domain`
+- `capability`
+- `business`
+- `handler`
+
+依赖规则如下：
+
+- `infra` 不能依赖其他
+- `repository` 不能依赖其他
+- `service` 仅可依赖 `infra`、`repository`
+- `domain` 仅可依赖 `service`、`infra`、`repository`
+- `capability` / `business` 仅可依赖 `domain`、`service`、`repository`、`infra`
+- `handler` 可以依赖所有
+
+如果不显式指定 namespace，`ServiceKey` / `SessionKey` 默认使用 `handler`。
 
 ## 示例
 
@@ -36,8 +61,8 @@ import (
 
 func main() {
 	container := biz_component.NewContainer()
-	configKey := biz_component.ServiceKey[string]("config")
-	componentKey := biz_component.SessionKey[string]("order_component")
+	configKey := biz_component.ServiceKeyIn[string](biz_component.ServiceNamespace, "config")
+	componentKey := biz_component.SessionKeyIn[string](biz_component.HandlerNamespace, "order_component")
 
 	_ = biz_component.RegisterService(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil

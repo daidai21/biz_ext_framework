@@ -12,6 +12,7 @@ This directory is an independent Go module.
 - `Key[T]`: typed component key
 - `Provider[T]`: typed lazy object constructor with dependency resolution support
 - `Resolver`: dependency lookup interface used inside providers
+- `Namespace`: layered component namespace
 
 ## Behavior
 
@@ -19,7 +20,31 @@ This directory is an independent Go module.
 - session-scope objects are created once per session id
 - providers resolve other components through typed generic helpers
 - circular dependencies are detected
+- layered namespace dependency rules are enforced
 - the container is concurrency-safe
+
+## Namespace Layers
+
+`biz_component` defines these namespaces:
+
+- `infra`
+- `repository`
+- `service`
+- `domain`
+- `capability`
+- `business`
+- `handler`
+
+Dependency rules:
+
+- `infra` cannot depend on anything
+- `repository` cannot depend on anything
+- `service` can only depend on `infra` and `repository`
+- `domain` can only depend on `service`, `infra`, and `repository`
+- `capability` / `business` can only depend on `domain`, `service`, `repository`, and `infra`
+- `handler` can depend on all namespaces
+
+If namespace is not specified explicitly, `ServiceKey` / `SessionKey` default to `handler`.
 
 ## Example
 
@@ -36,8 +61,8 @@ import (
 
 func main() {
 	container := biz_component.NewContainer()
-	configKey := biz_component.ServiceKey[string]("config")
-	componentKey := biz_component.SessionKey[string]("order_component")
+	configKey := biz_component.ServiceKeyIn[string](biz_component.ServiceNamespace, "config")
+	componentKey := biz_component.SessionKeyIn[string](biz_component.HandlerNamespace, "order_component")
 
 	_ = biz_component.RegisterService(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil

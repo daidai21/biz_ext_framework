@@ -85,6 +85,9 @@ The builder creates these standard containers by default:
 
 - `Container() *biz_component.Container`
 - `RegisterAny(name string, scope biz_component.Scope, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterAnyIn(name string, scope biz_component.Scope, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterServiceIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterSessionIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
 - `ResolveAny(ctx context.Context, name string) (any, error)`
 - `ResolveAnyInSession(ctx context.Context, sessionID, name string) (any, error)`
 - `ServiceObject(name string) (any, bool)`
@@ -92,6 +95,8 @@ The builder creates these standard containers by default:
 - `DeleteService(name string)`
 - `DeleteSessionObject(sessionID, name string)`
 - `ClearSession(sessionID string)`
+
+If you want namespace-aware registration directly from `service_manager`, use `RegisterAnyIn`, `RegisterServiceIn`, or `RegisterSessionIn`.
 
 Typed initialization and lookup should use the generic helpers from `biz_component` together with `Container()`.
 

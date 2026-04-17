@@ -84,6 +84,9 @@ builder 默认会初始化以下标准容器：
 
 - `Container() *biz_component.Container`
 - `RegisterAny(name string, scope biz_component.Scope, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterAnyIn(name string, scope biz_component.Scope, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterServiceIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
+- `RegisterSessionIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error`
 - `ResolveAny(ctx context.Context, name string) (any, error)`
 - `ResolveAnyInSession(ctx context.Context, sessionID, name string) (any, error)`
 - `ServiceObject(name string) (any, bool)`
@@ -91,6 +94,8 @@ builder 默认会初始化以下标准容器：
 - `DeleteService(name string)`
 - `DeleteSessionObject(sessionID, name string)`
 - `ClearSession(sessionID string)`
+
+如果希望直接在 `service_manager` 层使用 namespace 分层注册，可以使用 `RegisterAnyIn` / `RegisterServiceIn` / `RegisterSessionIn`。
 
 带类型的初始化和获取，应该通过 `Container()` 配合 `biz_component` 的泛型 helper 来完成。
 

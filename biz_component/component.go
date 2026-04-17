@@ -12,12 +12,14 @@ import (
 )
 
 var (
-	ErrInvalidComponentName  = errors.New("invalid component name")
-	ErrNilProvider           = errors.New("nil component provider")
-	ErrComponentNotFound     = errors.New("component not found")
-	ErrSessionRequired       = errors.New("session is required")
-	ErrCircularDependency    = errors.New("circular component dependency")
-	ErrComponentTypeMismatch = errors.New("component type mismatch")
+	ErrInvalidComponentName      = errors.New("invalid component name")
+	ErrInvalidComponentNamespace = errors.New("invalid component namespace")
+	ErrNilProvider               = errors.New("nil component provider")
+	ErrComponentNotFound         = errors.New("component not found")
+	ErrSessionRequired           = errors.New("session is required")
+	ErrCircularDependency        = errors.New("circular component dependency")
+	ErrComponentTypeMismatch     = errors.New("component type mismatch")
+	ErrNamespaceDependencyDenied = errors.New("component namespace dependency denied")
 )
 
 type Scope string
@@ -27,22 +29,45 @@ const (
 	SessionScope Scope = "SESSION"
 )
 
+type Namespace string
+
+const (
+	InfraNamespace      Namespace = "infra"
+	RepositoryNamespace Namespace = "repository"
+	ServiceNamespace    Namespace = "service"
+	DomainNamespace     Namespace = "domain"
+	CapabilityNamespace Namespace = "capability"
+	BusinessNamespace   Namespace = "business"
+	HandlerNamespace    Namespace = "handler"
+)
+
 type Key[T any] struct {
-	name  string
-	scope Scope
+	name      string
+	scope     Scope
+	namespace Namespace
 }
 
 func ServiceKey[T any](name string) Key[T] {
+	return ServiceKeyIn[T](HandlerNamespace, name)
+}
+
+func ServiceKeyIn[T any](namespace Namespace, name string) Key[T] {
 	return Key[T]{
-		name:  name,
-		scope: ServiceScope,
+		name:      name,
+		scope:     ServiceScope,
+		namespace: namespace,
 	}
 }
 
 func SessionKey[T any](name string) Key[T] {
+	return SessionKeyIn[T](HandlerNamespace, name)
+}
+
+func SessionKeyIn[T any](namespace Namespace, name string) Key[T] {
 	return Key[T]{
-		name:  name,
-		scope: SessionScope,
+		name:      name,
+		scope:     SessionScope,
+		namespace: namespace,
 	}
 }
 
@@ -54,6 +79,10 @@ func (k Key[T]) Scope() Scope {
 	return k.scope
 }
 
+func (k Key[T]) Namespace() Namespace {
+	return k.namespace
+}
+
 type Provider[T any] func(ctx context.Context, resolver Resolver) (T, error)
 
 type Resolver interface {
@@ -61,8 +90,9 @@ type Resolver interface {
 }
 
 type definition struct {
-	scope    Scope
-	provider func(ctx context.Context, resolver Resolver) (any, error)
+	scope     Scope
+	namespace Namespace
+	provider  func(ctx context.Context, resolver Resolver) (any, error)
 }
 
 type inflightBuild struct {
@@ -72,6 +102,11 @@ type inflightBuild struct {
 }
 
 type resolverPathContextKey struct{}
+
+type resolverFrame struct {
+	name      string
+	namespace Namespace
+}
 
 // Container is a concurrency-safe IOC container supporting both service-level
 // and session-level object management.
@@ -98,7 +133,7 @@ func Register[T any](container *Container, key Key[T], provider Provider[T]) err
 	if provider == nil {
 		return ErrNilProvider
 	}
-	return container.register(key.name, key.scope, func(ctx context.Context, resolver Resolver) (any, error) {
+	return container.register(key.name, key.scope, key.namespace, func(ctx context.Context, resolver Resolver) (any, error) {
 		return provider(ctx, resolver)
 	})
 }
@@ -167,7 +202,11 @@ func SessionObject[T any](container *Container, sessionID string, key Key[T]) (T
 }
 
 func (c *Container) RegisterAny(name string, scope Scope, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
-	return c.register(name, scope, provider)
+	return c.register(name, scope, HandlerNamespace, provider)
+}
+
+func (c *Container) RegisterAnyIn(name string, scope Scope, namespace Namespace, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
+	return c.register(name, scope, namespace, provider)
 }
 
 func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
@@ -180,6 +219,10 @@ func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 	if !ok {
 		c.mu.Unlock()
 		return nil, fmt.Errorf("%w: %q", ErrComponentNotFound, name)
+	}
+	if err := validateDependency(ctx, definition.namespace, name); err != nil {
+		c.mu.Unlock()
+		return nil, err
 	}
 
 	key, sessionID, err := c.resolveKey(ctx, name, definition.scope)
@@ -211,7 +254,7 @@ func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 	c.inflight[key] = inflight
 	c.mu.Unlock()
 
-	resolveCtx := withResolverPath(ctx, name)
+	resolveCtx := withResolverFrame(ctx, name, definition.namespace)
 	value, buildErr := definition.provider(resolveCtx, c)
 
 	c.mu.Lock()
@@ -309,7 +352,7 @@ func (c *Container) ClearSession(sessionID string) {
 	delete(c.sessionObjects, sessionID)
 }
 
-func (c *Container) register(name string, scope Scope, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
+func (c *Container) register(name string, scope Scope, namespace Namespace, provider func(ctx context.Context, resolver Resolver) (any, error)) error {
 	if name == "" {
 		return ErrInvalidComponentName
 	}
@@ -319,6 +362,9 @@ func (c *Container) register(name string, scope Scope, provider func(ctx context
 	if scope != ServiceScope && scope != SessionScope {
 		return fmt.Errorf("unsupported component scope: %q", scope)
 	}
+	if err := namespace.Validate(); err != nil {
+		return err
+	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -327,8 +373,9 @@ func (c *Container) register(name string, scope Scope, provider func(ctx context
 		c.definitions = make(map[string]definition)
 	}
 	c.definitions[name] = definition{
-		scope:    scope,
-		provider: provider,
+		scope:     scope,
+		namespace: namespace,
+		provider:  provider,
 	}
 	return nil
 }
@@ -407,17 +454,30 @@ func (c *Container) getInflightLocked(key string) *inflightBuild {
 }
 
 func withResolverPath(ctx context.Context, name string) context.Context {
-	path := resolverPathFromContext(ctx)
-	path = append(path, name)
+	return withResolverFrame(ctx, name, HandlerNamespace)
+}
+
+func withResolverFrame(ctx context.Context, name string, namespace Namespace) context.Context {
+	path := resolverFramesFromContext(ctx)
+	path = append(path, resolverFrame{name: name, namespace: namespace})
 	return context.WithValue(ctx, resolverPathContextKey{}, path)
 }
 
 func resolverPathFromContext(ctx context.Context) []string {
+	frames := resolverFramesFromContext(ctx)
+	path := make([]string, 0, len(frames))
+	for _, frame := range frames {
+		path = append(path, frame.name)
+	}
+	return path
+}
+
+func resolverFramesFromContext(ctx context.Context) []resolverFrame {
 	if ctx == nil {
 		return nil
 	}
-	path, _ := ctx.Value(resolverPathContextKey{}).([]string)
-	return append([]string(nil), path...)
+	path, _ := ctx.Value(resolverPathContextKey{}).([]resolverFrame)
+	return append([]resolverFrame(nil), path...)
 }
 
 func hasCycle(ctx context.Context, name string) bool {
@@ -428,4 +488,49 @@ func hasCycle(ctx context.Context, name string) bool {
 		}
 	}
 	return false
+}
+
+func (n Namespace) Validate() error {
+	switch n {
+	case InfraNamespace, RepositoryNamespace, ServiceNamespace, DomainNamespace, CapabilityNamespace, BusinessNamespace, HandlerNamespace:
+		return nil
+	default:
+		return fmt.Errorf("%w: %q", ErrInvalidComponentNamespace, n)
+	}
+}
+
+func validateDependency(ctx context.Context, targetNamespace Namespace, targetName string) error {
+	parent, ok := currentResolverFrame(ctx)
+	if !ok {
+		return nil
+	}
+	if canDepend(parent.namespace, targetNamespace) {
+		return nil
+	}
+	return fmt.Errorf("%w: %s -> %s (%s -> %s)", ErrNamespaceDependencyDenied, parent.name, targetName, parent.namespace, targetNamespace)
+}
+
+func currentResolverFrame(ctx context.Context) (resolverFrame, bool) {
+	path := resolverFramesFromContext(ctx)
+	if len(path) == 0 {
+		return resolverFrame{}, false
+	}
+	return path[len(path)-1], true
+}
+
+func canDepend(from Namespace, to Namespace) bool {
+	switch from {
+	case InfraNamespace, RepositoryNamespace:
+		return false
+	case ServiceNamespace:
+		return to == InfraNamespace || to == RepositoryNamespace
+	case DomainNamespace:
+		return to == ServiceNamespace || to == InfraNamespace || to == RepositoryNamespace
+	case CapabilityNamespace, BusinessNamespace:
+		return to == DomainNamespace || to == ServiceNamespace || to == RepositoryNamespace || to == InfraNamespace
+	case HandlerNamespace:
+		return true
+	default:
+		return false
+	}
 }

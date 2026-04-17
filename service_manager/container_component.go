@@ -28,6 +28,18 @@ func (c *ComponentContainer) RegisterAny(name string, scope biz_component.Scope,
 	return c.container.RegisterAny(name, scope, provider)
 }
 
+func (c *ComponentContainer) RegisterAnyIn(name string, scope biz_component.Scope, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
+	return c.container.RegisterAnyIn(name, scope, namespace, provider)
+}
+
+func (c *ComponentContainer) RegisterServiceIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
+	return c.container.RegisterAnyIn(name, biz_component.ServiceScope, namespace, provider)
+}
+
+func (c *ComponentContainer) RegisterSessionIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
+	return c.container.RegisterAnyIn(name, biz_component.SessionScope, namespace, provider)
+}
+
 func (c *ComponentContainer) ResolveAny(ctx context.Context, name string) (any, error) {
 	return c.container.ResolveAny(ctx, name)
 }

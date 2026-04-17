@@ -1,10 +1,10 @@
 # Unit Test Coverage
 
-Generated at: 2026-04-17 17:43:20 +0800
+Generated at: 2026-04-17 18:03:41 +0800
 
 | Module | Coverage | Profile |
 | --- | --- | --- |
-| biz_component | 95.3% | `.coverage/biz_component.cover.out` |
+| biz_component | 95.6% | `.coverage/biz_component.cover.out` |
 | biz_ctx | 100.0% | `.coverage/biz_ctx.cover.out` |
 | biz_identity | 100.0% | `.coverage/biz_identity.cover.out` |
 | biz_observation | 98.0% | `.coverage/biz_observation.cover.out` |
