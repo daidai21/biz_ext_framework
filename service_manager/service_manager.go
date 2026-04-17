@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	ComponentContainerName   = "component_container"
 	IdentityContainerName    = "identity_container"
 	ProcessContainerName     = "process_container"
 	ModelContainerName       = "model_container"
@@ -59,12 +60,13 @@ type ServiceManager struct {
 	state ServiceManagerState
 	busy  bool
 
-	identityContainer *IdentityContainer
-	processContainer  *ProcessContainer
-	modelContainer    *ModelContainer
-	ctxContainer      *CtxContainer
-	observation       *ObservationContainer
-	containers        map[string]any
+	identityContainer  *IdentityContainer
+	processContainer   *ProcessContainer
+	modelContainer     *ModelContainer
+	ctxContainer       *CtxContainer
+	componentContainer *ComponentContainer
+	observation        *ObservationContainer
+	containers         map[string]any
 
 	startupChecks []StartupCheck
 	lifecycles    []namedLifecycle
@@ -94,6 +96,10 @@ func (m *ServiceManager) ModelContainer() *ModelContainer {
 
 func (m *ServiceManager) CtxContainer() *CtxContainer {
 	return m.ctxContainer
+}
+
+func (m *ServiceManager) ComponentContainer() *ComponentContainer {
+	return m.componentContainer
 }
 
 func (m *ServiceManager) ObservationContainer() *ObservationContainer {

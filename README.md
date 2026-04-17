@@ -13,6 +13,7 @@ Modules in this repository can be used in two ways:
 
 `service_manager` currently integrates:
 
+- `biz_component`
 - `biz_ctx`
 - `biz_identity`
 - `biz_observation`
@@ -36,14 +37,15 @@ Those lower-level modules do not depend on each other and can still be used sepa
 
 Independent usage:
 
-  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
-     |          |              |              |            |         |         |                |
-     +----------+--------------+--------------+------------+---------+---------+----------------+
-                                     each module can be used alone
+  biz_component  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+       |            |          |              |              |            |         |         |                |
+       +------------+----------+--------------+--------------+------------+---------+---------+----------------+
+                                             each module can be used alone
 ```
 
 ## Directory Layout
 
+- `biz_component/`: independent Go module for IOC-style business component management
 - `biz_ctx/`: independent Go module for business context components
 - `biz_identity/`: independent Go module for business identity abstractions
 - `biz_observation/`: independent Go module for business observation utilities
@@ -64,6 +66,7 @@ Independent usage:
 
 - `ServiceManager`: service instance lifecycle management
 - `ServiceManagerBuilder`: container initialization and service construction
+- `ComponentContainer`: IOC component management
 - `CtxContainer`: business session context management
 - `IdentityContainer`: business identity whitelist management
 - `ObservationContainer`: log / metrics / trace dependency management
@@ -91,6 +94,21 @@ Documentation:
 
 - English: [`ext_model/README.md`](./ext_model/README.md)
 - 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
+
+### `biz_component`
+
+`biz_component` provides IOC-style business component management:
+
+- `Container`
+- `ServiceScope`
+- `SessionScope`
+- `Provider`
+- `Resolver`
+
+Documentation:
+
+- English: [`biz_component/README.md`](./biz_component/README.md)
+- 中文: [`biz_component/README-ZH.md`](./biz_component/README-ZH.md)
 
 ### `biz_identity`
 

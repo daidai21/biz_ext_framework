@@ -3,6 +3,7 @@ module github.com/daidai21/biz_ext_framework/service_manager
 go 1.22
 
 require (
+	github.com/daidai21/biz_ext_framework/biz_component v0.0.0
 	github.com/daidai21/biz_ext_framework/biz_ctx v0.0.0
 	github.com/daidai21/biz_ext_framework/biz_identity v0.0.0
 	github.com/daidai21/biz_ext_framework/biz_observation v0.0.0
@@ -14,6 +15,7 @@ require (
 )
 
 replace (
+	github.com/daidai21/biz_ext_framework/biz_component => ../biz_component
 	github.com/daidai21/biz_ext_framework/biz_ctx => ../biz_ctx
 	github.com/daidai21/biz_ext_framework/biz_identity => ../biz_identity
 	github.com/daidai21/biz_ext_framework/biz_observation => ../biz_observation

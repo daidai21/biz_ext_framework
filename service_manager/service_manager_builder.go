@@ -26,11 +26,12 @@ type containerBuildConfig struct {
 type ServiceManagerBuilder struct {
 	name string
 
-	identityContainer *IdentityContainer
-	processContainer  *ProcessContainer
-	modelContainer    *ModelContainer
-	ctxContainer      *CtxContainer
-	observation       *ObservationContainer
+	identityContainer  *IdentityContainer
+	processContainer   *ProcessContainer
+	modelContainer     *ModelContainer
+	ctxContainer       *CtxContainer
+	componentContainer *ComponentContainer
+	observation        *ObservationContainer
 
 	identityScopes []string
 	processes      []processBuildConfig
@@ -91,6 +92,18 @@ func (b *ServiceManagerBuilder) WithCtxContainer(container *CtxContainer) *Servi
 		return b
 	}
 	b.ctxContainer = container
+	return b
+}
+
+func (b *ServiceManagerBuilder) WithComponentContainer(container *ComponentContainer) *ServiceManagerBuilder {
+	if b.err != nil {
+		return b
+	}
+	if container == nil {
+		b.err = ErrNilContainer
+		return b
+	}
+	b.componentContainer = container
 	return b
 }
 
@@ -201,6 +214,10 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 	if ctxContainer == nil {
 		ctxContainer = NewCtxContainer()
 	}
+	componentContainer := b.componentContainer
+	if componentContainer == nil {
+		componentContainer = NewComponentContainer(ctxContainer)
+	}
 	observationContainer := b.observation
 	if observationContainer == nil {
 		observationContainer = NewObservationContainer()
@@ -227,6 +244,7 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 		ProcessContainerName:     processContainer,
 		ModelContainerName:       modelContainer,
 		CtxContainerName:         ctxContainer,
+		ComponentContainerName:   componentContainer,
 		ObservationContainerName: observationContainer,
 	}
 	for _, item := range b.containers {
@@ -237,15 +255,16 @@ func (b *ServiceManagerBuilder) Build() (*ServiceManager, error) {
 	}
 
 	return &ServiceManager{
-		name:              b.name,
-		state:             ServiceManagerStateReady,
-		identityContainer: identityContainer,
-		processContainer:  processContainer,
-		modelContainer:    modelContainer,
-		ctxContainer:      ctxContainer,
-		observation:       observationContainer,
-		containers:        containers,
-		startupChecks:     append([]StartupCheck(nil), b.startupChecks...),
-		lifecycles:        append([]namedLifecycle(nil), b.lifecycles...),
+		name:               b.name,
+		state:              ServiceManagerStateReady,
+		identityContainer:  identityContainer,
+		processContainer:   processContainer,
+		modelContainer:     modelContainer,
+		ctxContainer:       ctxContainer,
+		componentContainer: componentContainer,
+		observation:        observationContainer,
+		containers:         containers,
+		startupChecks:      append([]StartupCheck(nil), b.startupChecks...),
+		lifecycles:         append([]namedLifecycle(nil), b.lifecycles...),
 	}, nil
 }

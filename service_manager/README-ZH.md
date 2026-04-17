@@ -8,7 +8,7 @@
 
 `service_manager` 是一个串联其他底层模块的集成层。
 
-- 使用 `service_manager`，意味着在服务侧把 `biz_ctx`、`biz_identity`、`biz_observation`、`biz_process`、`ext_model` 以及扩展编排模块串起来统一管理
+- 使用 `service_manager`，意味着在服务侧把 `biz_component`、`biz_ctx`、`biz_identity`、`biz_observation`、`biz_process`、`ext_model` 以及扩展编排模块串起来统一管理
 - 仓库中的其他模块依然都可以单独使用
 - 这些底层模块彼此之间没有强依赖关系，可以按业务需要独立接入
 
@@ -28,10 +28,10 @@
 
 独立使用关系：
 
-  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
-    |           |              |              |            |         |         |                |
-    +-----------+--------------+--------------+------------+---------+---------+----------------+
-                                     各模块都可以独立使用
+  biz_component  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+       |           |           |              |              |            |         |         |                |
+       +-----------+-----------+--------------+--------------+------------+---------+---------+----------------+
+                                             各模块都可以独立使用
 ```
 
 ## 核心容器
@@ -71,11 +71,27 @@
 
 builder 默认会初始化以下标准容器：
 
+- `component_container`
 - `ctx_container`
 - `identity_container`
 - `observation_container`
 - `process_container`
 - `model_container`
+
+### `ComponentContainer`
+
+`ComponentContainer` 用于管理 `biz_component` 的 IOC 对象，既支持服务级，也支持 Session 级。
+
+- `Register(name string, scope biz_component.Scope, provider biz_component.Provider) error`
+- `RegisterService(name string, provider biz_component.Provider) error`
+- `RegisterSession(name string, provider biz_component.Provider) error`
+- `Resolve(ctx context.Context, name string) (any, error)`
+- `ResolveInSession(ctx context.Context, sessionID, name string) (any, error)`
+- `ServiceObject(name string) (any, bool)`
+- `SessionObject(sessionID, name string) (any, bool)`
+- `DeleteService(name string)`
+- `DeleteSessionObject(sessionID, name string)`
+- `ClearSession(sessionID string)`
 
 ### `CtxContainer`
 

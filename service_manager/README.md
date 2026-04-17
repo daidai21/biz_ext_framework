@@ -8,7 +8,7 @@ This directory is an independent Go module.
 
 `service_manager` is the integration layer that wires several lower-level modules together.
 
-- using `service_manager` means using `biz_ctx`, `biz_identity`, `biz_observation`, `biz_process`, `ext_model`, and extension orchestration modules together through one service-side management layer
+- using `service_manager` means using `biz_component`, `biz_ctx`, `biz_identity`, `biz_observation`, `biz_process`, `ext_model`, and extension orchestration modules together through one service-side management layer
 - other modules in this repository can still be used independently
 - those lower-level modules do not depend on each other and can be adopted separately based on business needs
 
@@ -29,10 +29,10 @@ This directory is an independent Go module.
 
 Independent usage:
 
-  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
-     |          |              |              |            |         |         |                |
-     +----------+--------------+--------------+------------+---------+---------+----------------+
-                                     each module can be used alone
+  biz_component  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+       |            |          |              |              |            |         |         |                |
+       +------------+----------+--------------+--------------+------------+---------+---------+----------------+
+                                             each module can be used alone
 ```
 
 ## Core Containers
@@ -72,11 +72,27 @@ Lifecycle states:
 
 The builder creates these standard containers by default:
 
+- `component_container`
 - `ctx_container`
 - `identity_container`
 - `observation_container`
 - `process_container`
 - `model_container`
+
+### `ComponentContainer`
+
+`ComponentContainer` manages `biz_component` IOC objects for both service scope and session scope.
+
+- `Register(name string, scope biz_component.Scope, provider biz_component.Provider) error`
+- `RegisterService(name string, provider biz_component.Provider) error`
+- `RegisterSession(name string, provider biz_component.Provider) error`
+- `Resolve(ctx context.Context, name string) (any, error)`
+- `ResolveInSession(ctx context.Context, sessionID, name string) (any, error)`
+- `ServiceObject(name string) (any, bool)`
+- `SessionObject(sessionID, name string) (any, bool)`
+- `DeleteService(name string)`
+- `DeleteSessionObject(sessionID, name string)`
+- `ClearSession(sessionID string)`
 
 ### `CtxContainer`
 

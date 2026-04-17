@@ -13,6 +13,7 @@
 
 当前 `service_manager` 集成了：
 
+- `biz_component`
 - `biz_ctx`
 - `biz_identity`
 - `biz_observation`
@@ -35,14 +36,15 @@
 
 独立使用关系：
 
-  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
-    |           |              |              |            |         |         |                |
-    +-----------+--------------+--------------+------------+---------+---------+----------------+
-                                     各模块都可以独立使用
+  biz_component  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
+       |           |           |              |              |            |         |         |                |
+       +-----------+-----------+--------------+--------------+------------+---------+---------+----------------+
+                                             各模块都可以独立使用
 ```
 
 ## 目录结构
 
+- `biz_component/`：IOC 风格业务组件管理的独立 Go module
 - `biz_ctx/`：业务上下文组件的独立 Go module
 - `biz_identity/`：业务身份抽象的独立 Go module
 - `biz_observation/`：业务观测工具的独立 Go module
@@ -63,6 +65,7 @@
 
 - `ServiceManager`：服务实例生命周期管理
 - `ServiceManagerBuilder`：容器初始化与服务构建
+- `ComponentContainer`：IOC 组件管理
 - `CtxContainer`：业务 session 上下文管理
 - `IdentityContainer`：业务身份白名单管理
 - `ObservationContainer`：日志 / 指标 / 链路依赖管理
@@ -90,6 +93,21 @@
 
 - English: [`ext_model/README.md`](./ext_model/README.md)
 - 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
+
+### `biz_component`
+
+`biz_component` 提供 IOC 风格的业务组件管理：
+
+- `Container`
+- `ServiceScope`
+- `SessionScope`
+- `Provider`
+- `Resolver`
+
+文档入口：
+
+- English: [`biz_component/README.md`](./biz_component/README.md)
+- 中文: [`biz_component/README-ZH.md`](./biz_component/README-ZH.md)
 
 ### `biz_identity`
 

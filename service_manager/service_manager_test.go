@@ -91,6 +91,9 @@ func TestServiceManagerBuilderBuild(t *testing.T) {
 	if manager.CtxContainer() == nil {
 		t.Fatalf("expected ctx container initialized")
 	}
+	if manager.ComponentContainer() == nil {
+		t.Fatalf("expected component container initialized")
+	}
 	if manager.ObservationContainer() == nil {
 		t.Fatalf("expected observation container initialized")
 	}
