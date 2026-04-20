@@ -133,6 +133,39 @@ func TestExtProcessContainerRegisterWithAction(t *testing.T) {
 	}
 }
 
+func TestExtProcessContainerRegisterWithAppendType(t *testing.T) {
+	template := ext_process.NewTemplate(func(ctx context.Context, impl testExtProcess, input string) (bool, error) {
+		return true, nil
+	}, func(ctx context.Context, impl testExtProcess, input string) (string, bool, error) {
+		return impl.Handle(ctx, input)
+	})
+	container, err := NewExtProcessContainer[testExtProcess, string, string](template)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+
+	if err := container.Register("audit", testExtProcessImpl{value: "impl-a"}); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if err := container.RegisterWithAppendType("audit", testExtProcessImpl{value: "impl-before"}, ext_process.AppendBefore); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if err := container.RegisterWithAppendType("audit", testExtProcessImpl{value: "impl-parallel"}, ext_process.AppendParallel); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+
+	results, err := container.Execute(context.Background(), "audit", "input", ext_process.Serial)
+	if err != nil {
+		t.Fatalf("expected execute success, got %v", err)
+	}
+	if len(results) != 3 ||
+		results[0] != "impl-before:input" ||
+		results[1] != "impl-a:input" ||
+		results[2] != "impl-parallel:input" {
+		t.Fatalf("unexpected append type results: %v", results)
+	}
+}
+
 func TestExtProcessContainerInvalidDefinition(t *testing.T) {
 	template := ext_process.NewTemplate(func(ctx context.Context, impl testExtProcess, input string) (bool, error) {
 		return true, nil
@@ -162,6 +195,22 @@ func TestExtProcessContainerInvalidAction(t *testing.T) {
 
 	if err := container.RegisterWithAction("audit", testExtProcessImpl{value: "impl-a"}, ext_process.DefinitionAction("UNKNOWN")); err == nil {
 		t.Fatalf("expected invalid action error")
+	}
+}
+
+func TestExtProcessContainerInvalidAppendType(t *testing.T) {
+	template := ext_process.NewTemplate(func(ctx context.Context, impl testExtProcess, input string) (bool, error) {
+		return true, nil
+	}, func(ctx context.Context, impl testExtProcess, input string) (string, bool, error) {
+		return impl.Handle(ctx, input)
+	})
+	container, err := NewExtProcessContainer[testExtProcess, string, string](template)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+
+	if err := container.RegisterWithAppendType("audit", testExtProcessImpl{value: "impl-a"}, ext_process.AppendType("UNKNOWN")); err == nil {
+		t.Fatalf("expected invalid append type error")
 	}
 }
 

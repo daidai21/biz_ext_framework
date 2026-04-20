@@ -103,14 +103,26 @@ func NewExtProcessContainer[Impl any, Input any, Output any](template ext_proces
 }
 
 func (c *ExtProcessContainer[Impl, Input, Output]) Register(definition string, impl Impl) error {
-	return c.RegisterWithAction(definition, impl, ext_process.Append)
+	return c.RegisterWithActionAndAppendType(definition, impl, ext_process.Append, ext_process.AppendAfter)
+}
+
+func (c *ExtProcessContainer[Impl, Input, Output]) RegisterWithAppendType(definition string, impl Impl, appendType ext_process.AppendType) error {
+	return c.RegisterWithActionAndAppendType(definition, impl, ext_process.Append, appendType)
 }
 
 func (c *ExtProcessContainer[Impl, Input, Output]) RegisterWithAction(definition string, impl Impl, action ext_process.DefinitionAction) error {
-	return c.Apply(definition, []Impl{impl}, action)
+	return c.RegisterWithActionAndAppendType(definition, impl, action, ext_process.AppendAfter)
+}
+
+func (c *ExtProcessContainer[Impl, Input, Output]) RegisterWithActionAndAppendType(definition string, impl Impl, action ext_process.DefinitionAction, appendType ext_process.AppendType) error {
+	return c.ApplyWithAppendType(definition, []Impl{impl}, action, appendType)
 }
 
 func (c *ExtProcessContainer[Impl, Input, Output]) Apply(definition string, impls []Impl, action ext_process.DefinitionAction) error {
+	return c.ApplyWithAppendType(definition, impls, action, ext_process.AppendAfter)
+}
+
+func (c *ExtProcessContainer[Impl, Input, Output]) ApplyWithAppendType(definition string, impls []Impl, action ext_process.DefinitionAction, appendType ext_process.AppendType) error {
 	if definition == "" {
 		return ErrInvalidExtProcessDefinition
 	}
@@ -121,7 +133,7 @@ func (c *ExtProcessContainer[Impl, Input, Output]) Apply(definition string, impl
 	if c.impls == nil {
 		c.impls = make(map[string][]Impl)
 	}
-	merged, err := ext_process.MergeImplementations(c.impls[definition], impls, action)
+	merged, err := ext_process.MergeImplementationsWithAppendType(c.impls[definition], impls, action, appendType)
 	if err != nil {
 		return err
 	}

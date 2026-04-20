@@ -31,6 +31,14 @@ Build it with `NewTemplate(match, process)`.
 - `Skip`: ignore incoming implementations when the definition already has a flow
 - `Overwrite`: replace the current flow with incoming implementations
 
+### `AppendType`
+
+When `DefinitionAction=Append`, `AppendType` controls where incoming implementations are inserted:
+
+- `AppendBefore`: prepend incoming implementations before the current flow
+- `AppendAfter`: append incoming implementations after the current flow
+- `AppendParallel`: append incoming implementations after the current flow; typically used together with `Execute(..., ext_process.Parallel)`
+
 ### `Aspect`
 
 If you do not use `service_manager`, business code can still bind one ext process into `context.Context` and trigger it at the beginning of a function with:

@@ -193,6 +193,36 @@ func TestMergeImplementationsAppend(t *testing.T) {
 	}
 }
 
+func TestMergeImplementationsAppendBefore(t *testing.T) {
+	merged, err := MergeImplementationsWithAppendType([]string{"a"}, []string{"b", "c"}, Append, AppendBefore)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 3 || merged[0] != "b" || merged[1] != "c" || merged[2] != "a" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+}
+
+func TestMergeImplementationsAppendAfter(t *testing.T) {
+	merged, err := MergeImplementationsWithAppendType([]string{"a"}, []string{"b", "c"}, Append, AppendAfter)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 3 || merged[0] != "a" || merged[1] != "b" || merged[2] != "c" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+}
+
+func TestMergeImplementationsAppendParallel(t *testing.T) {
+	merged, err := MergeImplementationsWithAppendType([]string{"a"}, []string{"b", "c"}, Append, AppendParallel)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(merged) != 3 || merged[0] != "a" || merged[1] != "b" || merged[2] != "c" {
+		t.Fatalf("unexpected merged result: %#v", merged)
+	}
+}
+
 func TestMergeImplementationsSkip(t *testing.T) {
 	merged, err := MergeImplementations([]string{"a"}, []string{"b"}, Skip)
 	if err != nil {
@@ -224,5 +254,11 @@ func TestMergeImplementationsOverwrite(t *testing.T) {
 func TestMergeImplementationsInvalidAction(t *testing.T) {
 	if _, err := MergeImplementations([]string{"a"}, []string{"b"}, DefinitionAction("UNKNOWN")); err == nil {
 		t.Fatal("expected invalid action error")
+	}
+}
+
+func TestMergeImplementationsInvalidAppendType(t *testing.T) {
+	if _, err := MergeImplementationsWithAppendType([]string{"a"}, []string{"b"}, Append, AppendType("UNKNOWN")); err == nil {
+		t.Fatal("expected invalid append type error")
 	}
 }

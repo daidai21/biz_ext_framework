@@ -31,6 +31,14 @@ func(ctx context.Context, extProcessImpls []Impl, input Input, mode Mode) ([]Out
 - `Skip`：如果该 definition 已经存在流程，则跳过本次新增
 - `Overwrite`：使用新实现覆写已有流程
 
+### `AppendType`
+
+当 `DefinitionAction=Append` 时，`AppendType` 用来控制新实现插入到流程的哪个位置：
+
+- `AppendBefore`：前插到现有流程之前
+- `AppendAfter`：后插到现有流程之后
+- `AppendParallel`：按后插合并，通常配合 `Execute(..., ext_process.Parallel)` 使用
+
 ### `Aspect`
 
 如果不使用 `service_manager`，业务侧也可以直接把扩展流程绑定到 `context.Context`，然后在函数开始处调用：

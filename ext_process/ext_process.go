@@ -30,6 +30,19 @@ const (
 	Overwrite DefinitionAction = "OVERWRITE"
 )
 
+// AppendType defines where incoming implementations are placed when action is Append.
+type AppendType string
+
+const (
+	// AppendBefore prepends incoming implementations before existing ones.
+	AppendBefore AppendType = "BEFORE"
+	// AppendAfter appends incoming implementations after existing ones.
+	AppendAfter AppendType = "AFTER"
+	// AppendParallel appends incoming implementations after existing ones and is intended
+	// to be combined with Execute(..., Parallel) when the flow should run concurrently.
+	AppendParallel AppendType = "PARALLEL"
+)
+
 // MatchFunc defines whether an implementation should join current process call.
 type MatchFunc[Impl any, Input any] func(ctx context.Context, impl Impl, input Input) (bool, error)
 
@@ -161,18 +174,53 @@ func normalizeDefinitionAction(action DefinitionAction) DefinitionAction {
 	return action
 }
 
+// Validate checks whether the append type is supported.
+func (t AppendType) Validate() error {
+	switch t {
+	case AppendBefore, AppendAfter, AppendParallel:
+		return nil
+	default:
+		return fmt.Errorf("unsupported ext process append type: %q", string(t))
+	}
+}
+
+func normalizeAppendType(appendType AppendType) AppendType {
+	if appendType == "" {
+		return AppendAfter
+	}
+	return appendType
+}
+
 // MergeImplementations applies the action to existing and incoming implementations.
 func MergeImplementations[Impl any](existing []Impl, incoming []Impl, action DefinitionAction) ([]Impl, error) {
+	return MergeImplementationsWithAppendType(existing, incoming, action, AppendAfter)
+}
+
+// MergeImplementationsWithAppendType applies the action and append type to existing and incoming implementations.
+func MergeImplementationsWithAppendType[Impl any](existing []Impl, incoming []Impl, action DefinitionAction, appendType AppendType) ([]Impl, error) {
 	action = normalizeDefinitionAction(action)
 	if err := action.Validate(); err != nil {
+		return nil, err
+	}
+	appendType = normalizeAppendType(appendType)
+	if err := appendType.Validate(); err != nil {
 		return nil, err
 	}
 
 	switch action {
 	case Append:
-		merged := append([]Impl(nil), existing...)
-		merged = append(merged, incoming...)
-		return merged, nil
+		switch appendType {
+		case AppendBefore:
+			merged := append([]Impl(nil), incoming...)
+			merged = append(merged, existing...)
+			return merged, nil
+		case AppendAfter, AppendParallel:
+			merged := append([]Impl(nil), existing...)
+			merged = append(merged, incoming...)
+			return merged, nil
+		default:
+			return nil, fmt.Errorf("unsupported ext process append type: %q", appendType)
+		}
 	case Skip:
 		if len(existing) > 0 {
 			return append([]Impl(nil), existing...), nil
