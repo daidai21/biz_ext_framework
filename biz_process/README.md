@@ -169,3 +169,96 @@ func main() {
     fmt.Println(state)
 }
 ```
+
+## Example: BPMN + Rerun + Call Cache
+
+The example below shows one common remote-call pattern:
+
+- run the business flow with `RunProcess`
+- wrap unstable upstream calls with `Rerunner.Execute`
+- put `WithCallCache(ctx)` at request entry so repeated calls with the same request can reuse successful results
+
+```go
+package main
+
+import (
+    "context"
+    "errors"
+    "fmt"
+
+    "github.com/daidai21/biz_ext_framework/biz_process"
+)
+
+type profileReq struct {
+    UserID string `json:"user_id"`
+}
+
+func main() {
+    ctx := biz_process.WithCallCache(context.Background())
+
+    var remoteCalls int
+    fetchProfile := func(ctx context.Context, req profileReq) (string, error) {
+        return biz_process.CallWithCache(ctx, req, func(context.Context, profileReq) (string, error) {
+            remoteCalls++
+            if remoteCalls == 1 {
+                return "", errors.New("temporary upstream failure")
+            }
+            return "profile-u1001", nil
+        })
+    }
+
+    rerunner := biz_process.Rerunner[profileReq, string]{Attempts: 2}
+
+    var prepareProfile string
+    var finalizeProfile string
+
+    process := biz_process.Process{
+        Name: "order-flow",
+        Layers: []biz_process.ProcessLayer{
+            {
+                Name: "prepare",
+                Nodes: []biz_process.ProcessNode{
+                    biz_process.Task{
+                        Name: "load-profile",
+                        Task: func(ctx context.Context) error {
+                            value, err := rerunner.Execute(ctx, profileReq{UserID: "u1001"}, fetchProfile)
+                            if err != nil {
+                                return err
+                            }
+                            prepareProfile = value
+                            return nil
+                        },
+                    },
+                },
+            },
+            {
+                Name: "finalize",
+                Nodes: []biz_process.ProcessNode{
+                    biz_process.Task{
+                        Name: "reuse-profile",
+                        Task: func(ctx context.Context) error {
+                            value, err := rerunner.Execute(ctx, profileReq{UserID: "u1001"}, fetchProfile)
+                            if err != nil {
+                                return err
+                            }
+                            finalizeProfile = value
+                            return nil
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    if err := biz_process.RunProcess(ctx, process); err != nil {
+        panic(err)
+    }
+
+    fmt.Println(prepareProfile)
+    fmt.Println(finalizeProfile)
+    fmt.Println(remoteCalls)
+    // profile-u1001
+    // profile-u1001
+    // 2
+}
+```
