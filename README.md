@@ -1,198 +1,132 @@
 # biz_ext_framework
 
-`biz_ext_framework` is a repository for reusable business extension components.
+`biz_ext_framework` is a repository of platform components, extension components, and service-side integration utilities.
 
-Components are organized by top-level directories. Some directories are already independent Go modules, and some are placeholders reserved for follow-up work.
+The repository is organized around small Go modules. You can either use a module independently or adopt `service_manager` as the integration layer that wires several modules together.
+
+## Highlights
+
+- IOC-style business component container with `GlobalScope` and `SessionScope`
+- business session context and identity abstractions
+- lightweight observation helpers for log / metrics / trace
+- process orchestration for FSM, BPMN-like layered flow, and DAG
+- extension templates for SPI, process pipelines, and interceptors
+- CLI tools for generating and parsing process graphs
 
 ## Architecture
 
-Modules in this repository can be used in two ways:
-
-- use low-level modules independently, without pulling in other modules
-- use `service_manager` as the service-side integration layer that wires several modules together
-
-`service_manager` currently integrates:
+`service_manager` currently integrates both platform components and extension components:
 
 - `biz_component`
 - `biz_ctx`
 - `biz_identity`
 - `biz_observation`
 - `biz_process`
+- `ext_interceptor`
 - `ext_model`
+- `ext_process`
+- `ext_spi`
 
-Those lower-level modules do not depend on each other and can still be used separately.
+All of these modules remain independently usable, while `service_manager` wires them together on the service side.
 
 ```text
                           +-------------------+
                           |  service_manager  |
                           |   integration     |
                           +-------------------+
-                        /    /      |      \      \
-                       v    v       v       v      v
-                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
-                |  biz_ctx  | |biz_identity| |biz_observ.| |biz_process| | ext_model |
-                |session ctx| |identity wl | |log/metric/| |multi-     | |model      |
-                |           | |            | |trace      | |process     | |filter     |
-                +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
-
-Independent usage:
-
-  biz_component  biz_ctx  biz_identity  biz_observation  biz_process  ext_model  ext_spi  ext_process  ext_interceptor
-       |            |          |              |              |            |         |         |                |
-       +------------+----------+--------------+--------------+------------+---------+---------+----------------+
-                                             each module can be used alone
+                           /                 \
+                          v                   v
+               +-------------------+   +-------------------+
+               |   biz_xxx modules  |   |   ext_xxx modules  |
+               |platform components |   |extension components|
+               +-------------------+   +-------------------+
+               | biz_component     |   | ext_model         |
+               | biz_ctx           |   | ext_process       |
+               | biz_identity      |   | ext_spi           |
+               | biz_observation   |   | ext_interceptor   |
+               | biz_process       |   |                   |
+               +-------------------+   +-------------------+
 ```
 
-## Directory Layout
+## Modules
 
-- `biz_component/`: independent Go module for IOC-style business component management
-- `biz_ctx/`: independent Go module for business context components
-- `biz_identity/`: independent Go module for business identity abstractions
-- `biz_observation/`: independent Go module for business observation utilities
-- `biz_process/`: independent Go module for business process FSM
-- `ext_interceptor/`: independent Go module for extension interceptor abstractions
-- `ext_model/`: independent Go module for extension model abstractions
-- `ext_process/`: independent Go module for extension process template
-- `ext_spi/`: independent Go module for SPI template abstractions
-- `service_manager/`: independent Go module for service-side integration and container management
-- `Makefile`: repository-level helper targets
-- `go.mod`: repository-level Go module definition
+### Platform Components
 
-## Implemented Modules
+#### `biz_component`
 
-### `service_manager`
+IOC-style platform component container.
 
-`service_manager` provides a service-side integration layer built on top of other reusable modules:
-
-- `ServiceManager`: service instance lifecycle management
-- `ServiceManagerBuilder`: container initialization and service construction
-- `ComponentContainer`: IOC component management
-- `CtxContainer`: business session context management
-- `IdentityContainer`: business identity whitelist management
-- `ObservationContainer`: log / metrics / trace dependency management
-- `ProcessContainer`: multiple named process orchestration management
-- `SPIContainer`: extension definition to implementation management
-- `ExtProcessContainer`: extension process definition to implementation management
-- `InterceptorContainer`: interceptor definition to implementation management
-- `ModelContainer`: outbound RPC ext model whitelist filtering
-
-Documentation:
-
-- English: [`service_manager/README.md`](./service_manager/README.md)
-- 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
-
-### `ext_model`
-
-`ext_model` provides a generic, concurrency-safe model map abstraction:
-
-- `ExtObj`: value contract with `Key() string`
-- `ExtModel[V]`: map behavior interface
-- `ExtMap[V]`: default implementation
-- `CopyExtMap`: copy helper with `WithDeepCopy` and `WithKeyFilter`
-
-Documentation:
-
-- English: [`ext_model/README.md`](./ext_model/README.md)
-- 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
-
-### `biz_component`
-
-`biz_component` provides IOC-style business component management:
+Key capabilities:
 
 - `Container`
 - `GlobalScope`
 - `SessionScope`
-- `Provider`
-- `Resolver`
+- typed `Key[T]` / `Provider[T]`
+- same component name can exist in both global and session scope
 
-Documentation:
+Docs:
 
 - English: [`biz_component/README.md`](./biz_component/README.md)
 - 中文: [`biz_component/README-ZH.md`](./biz_component/README-ZH.md)
 
-### `biz_identity`
+#### `biz_process`
 
-`biz_identity` provides a technical component for business identity abstractions:
+Platform-side process orchestration primitives.
 
-- `BizIdentity`
-- `Parser`
-- `Validator`
-
-Documentation:
-
-- English: [`biz_identity/README.md`](./biz_identity/README.md)
-- 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
-
-### `biz_observation`
-
-`biz_observation` provides lightweight observation utilities:
-
-- `log_util`
-- `metrics_util`
-- `trace_util`
-- `observation_util`
-
-Documentation:
-
-- English: [`biz_observation/README.md`](./biz_observation/README.md)
-- 中文: [`biz_observation/README-ZH.md`](./biz_observation/README-ZH.md)
-
-### `biz_process`
-
-`biz_process` provides process orchestration components:
+Key capabilities:
 
 - FSM
 - BPMN-like serial-layer / parallel-node orchestration
 - DAG orchestration
+- standardized JSON serialization through `ProcessStringer`
+- graph generation / parsing tools
 
-Documentation:
+Docs:
 
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
-### `ext_process`
+#### Other Platform Components
 
-`ext_process` provides a generic extension process template:
+- [`biz_ctx`](./biz_ctx/README.md): business session context
+- [`biz_identity`](./biz_identity/README.md): business identity parsing and validation
+- [`biz_observation`](./biz_observation/README.md): observation helpers
 
-- `Mode` (`Serial`, `Parallel`)
-- `Template`
-- `MatchFunc`
-- `ProcessFunc` (with `continueNext` support in serial mode)
+### Extension Components
 
-Documentation:
+- [`ext_model`](./ext_model/README.md): extension model map abstraction
+- [`ext_process`](./ext_process/README.md): extension process template
+- [`ext_spi`](./ext_spi/README.md): SPI extension template
+- [`ext_interceptor`](./ext_interceptor/README.md): extension interceptor template
 
-- English: [`ext_process/README.md`](./ext_process/README.md)
-- 中文: [`ext_process/README-ZH.md`](./ext_process/README-ZH.md)
+### Integration Layer
 
-### `ext_spi`
+#### `service_manager`
 
-`ext_spi` provides a generic SPI template with four modes:
+Service-side integration layer for container initialization, lifecycle management, observation dependencies, process orchestration, SPI registration, and model filtering.
 
-- `First`
-- `All`
-- `FirstMatched`
-- `AllMatched`
+Docs:
 
-Documentation:
+- English: [`service_manager/README.md`](./service_manager/README.md)
+- 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
 
-- English: [`ext_spi/README.md`](./ext_spi/README.md)
-- 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
+## Tools
 
-### `ext_interceptor`
+The repository also provides CLI tools under [`tools/`](./tools/README.md):
 
-`ext_interceptor` provides a generic interceptor template abstraction:
+- `gen_process_graph`: generate Mermaid / DOT from BPMN, DAG, or FSM specs
+- `parse_process_graph`: parse runtime metric logs and render BPMN, DAG, or FSM graphs with aggregated metrics
 
-- `Handler`
-- `Template`
-- `MatchFunc`
-- `InterceptFunc`
+Install from GitHub:
 
-Documentation:
-
-- English: [`ext_interceptor/README.md`](./ext_interceptor/README.md)
-- 中文: [`ext_interceptor/README-ZH.md`](./ext_interceptor/README-ZH.md)
+```bash
+go install github.com/daidai21/biz_ext_framework/tools/gen_process_graph@latest
+go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@latest
+```
 
 ## Quick Start
+
+Independent module usage:
 
 ```go
 package main
@@ -208,30 +142,50 @@ type User struct {
     Name string
 }
 
-func (u User) Key() string {
-    return u.ID
-}
+func (u User) Key() string { return u.ID }
 
 func main() {
-    var users ext_model.ExtModel[User] = &ext_model.ExtMap[User]{}
-
+    users := &ext_model.ExtMap[User]{}
     users.Set(User{ID: "u1", Name: "Alice"})
-
     user, ok := users.Get("u1")
     fmt.Println(user.Name, ok)
 }
 ```
 
-## Development
-
-Run tests from the target module directory:
+Tool usage:
 
 ```bash
-cd ext_model && go test ./...
+gen_process_graph -type bpmn -input process.json
+parse_process_graph -type fsm -input fsm_metrics.jsonl -metrics qps,success_rate,p99
 ```
 
-Repository-level helper target:
+## Repository Layout
+
+- `biz_component/`
+- `biz_ctx/`
+- `biz_identity/`
+- `biz_observation/`
+- `biz_process/`
+- `ext_interceptor/`
+- `ext_model/`
+- `ext_process/`
+- `ext_spi/`
+- `service_manager/`
+- `tools/`
+- `Makefile`
+- `go.mod`
+
+## Development
+
+Run tests from a target module directory:
+
+```bash
+cd biz_process && go test ./...
+```
+
+Useful repository-level commands:
 
 ```bash
 make statistics_lines
+make unittest
 ```
