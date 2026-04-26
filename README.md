@@ -86,18 +86,119 @@ Docs:
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
-#### 3.1.3 Other Platform Components
+#### 3.1.3 `biz_ctx`
 
-- [`biz_ctx`](./biz_ctx/README.md): business session context
-- [`biz_identity`](./biz_identity/README.md): business identity parsing and validation
-- [`biz_observation`](./biz_observation/README.md): observation helpers
+Platform-side business session context component.
+
+Key capabilities:
+
+- `BizSession`
+- `BizSessionId`
+- `WithBizSession` / `BizSessionFromContext`
+- propagate and read business session state from request context
+
+Docs:
+
+- English: [`biz_ctx/README.md`](./biz_ctx/README.md)
+- 中文: [`biz_ctx/README-ZH.md`](./biz_ctx/README-ZH.md)
+
+#### 3.1.4 `biz_identity`
+
+Platform-side business identity abstraction component.
+
+Key capabilities:
+
+- `BizIdentity`
+- `ParseIdentityID`
+- `ValidateIdentityID`
+- `Parser` / `Validator`
+
+Docs:
+
+- English: [`biz_identity/README.md`](./biz_identity/README.md)
+- 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+#### 3.1.5 `biz_observation`
+
+Platform-side observation component.
+
+Key capabilities:
+
+- `Logger`
+- `MetricsRecorder`
+- `Tracer`
+- unified abstractions and helpers for log, metrics, and tracing
+
+Docs:
+
+- English: [`biz_observation/README.md`](./biz_observation/README.md)
+- 中文: [`biz_observation/README-ZH.md`](./biz_observation/README-ZH.md)
 
 ### 3.2 Extension Components
 
-- [`ext_model`](./ext_model/README.md): extension model map abstraction
-- [`ext_process`](./ext_process/README.md): extension process template
-- [`ext_spi`](./ext_spi/README.md): SPI extension template
-- [`ext_interceptor`](./ext_interceptor/README.md): extension interceptor template
+#### 3.2.1 `ext_model`
+
+Extension-side model container component.
+
+Key capabilities:
+
+- `ExtObj`
+- `ExtModel`
+- `ExtMap`
+- `CopyExtMap` with filter / deep-copy options
+
+Docs:
+
+- English: [`ext_model/README.md`](./ext_model/README.md)
+- 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
+
+#### 3.2.2 `ext_process`
+
+Extension-side process template component.
+
+Key capabilities:
+
+- `Template`
+- `Mode` (`Serial` / `Parallel`)
+- `DefinitionAction`
+- matching, merging, and execution orchestration for extension implementations
+
+Docs:
+
+- English: [`ext_process/README.md`](./ext_process/README.md)
+- 中文: [`ext_process/README-ZH.md`](./ext_process/README-ZH.md)
+
+#### 3.2.3 `ext_spi`
+
+Extension-side SPI template component.
+
+Key capabilities:
+
+- `Template`
+- `Mode` (`First` / `All` / `FirstMatched` / `AllMatched`)
+- `MatchFunc`
+- matching and execution template for SPI implementations
+
+Docs:
+
+- English: [`ext_spi/README.md`](./ext_spi/README.md)
+- 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
+
+#### 3.2.4 `ext_interceptor`
+
+Extension-side interceptor template component.
+
+Key capabilities:
+
+- `Handler`
+- `Template`
+- `MatchFunc`
+- matching and execution orchestration for interceptor chains
+
+Docs:
+
+- English: [`ext_interceptor/README.md`](./ext_interceptor/README.md)
+- 中文: [`ext_interceptor/README-ZH.md`](./ext_interceptor/README-ZH.md)
 
 ### 3.3 Integration Layer
 

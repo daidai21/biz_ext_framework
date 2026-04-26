@@ -86,18 +86,119 @@ IOC 风格平台组件容器。
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
-#### 3.1.3 其他平台组件
+#### 3.1.3 `biz_ctx`
 
-- [`biz_ctx`](./biz_ctx/README.md)：业务 session 上下文
-- [`biz_identity`](./biz_identity/README.md)：业务身份解析与校验
-- [`biz_observation`](./biz_observation/README.md)：观测工具
+平台侧业务 session 上下文组件。
+
+核心能力：
+
+- `BizSession`
+- `BizSessionId`
+- `WithBizSession` / `BizSessionFromContext`
+- 在请求上下文中透传和读取业务 session
+
+文档：
+
+- English: [`biz_ctx/README.md`](./biz_ctx/README.md)
+- 中文: [`biz_ctx/README-ZH.md`](./biz_ctx/README-ZH.md)
+
+#### 3.1.4 `biz_identity`
+
+平台侧业务身份抽象组件。
+
+核心能力：
+
+- `BizIdentity`
+- `ParseIdentityID`
+- `ValidateIdentityID`
+- `Parser` / `Validator`
+
+文档：
+
+- English: [`biz_identity/README.md`](./biz_identity/README.md)
+- 中文: [`biz_identity/README-ZH.md`](./biz_identity/README-ZH.md)
+
+#### 3.1.5 `biz_observation`
+
+平台侧观测组件。
+
+核心能力：
+
+- `Logger`
+- `MetricsRecorder`
+- `Tracer`
+- 日志、指标、链路的统一抽象和 helper
+
+文档：
+
+- English: [`biz_observation/README.md`](./biz_observation/README.md)
+- 中文: [`biz_observation/README-ZH.md`](./biz_observation/README-ZH.md)
 
 ### 3.2 扩展组件
 
-- [`ext_model`](./ext_model/README.md)：扩展模型 Map
-- [`ext_process`](./ext_process/README.md)：扩展流程模板
-- [`ext_spi`](./ext_spi/README.md)：SPI 扩展模板
-- [`ext_interceptor`](./ext_interceptor/README.md)：扩展拦截器模板
+#### 3.2.1 `ext_model`
+
+扩展侧模型容器组件。
+
+核心能力：
+
+- `ExtObj`
+- `ExtModel`
+- `ExtMap`
+- `CopyExtMap` 及其过滤 / 深拷贝选项
+
+文档：
+
+- English: [`ext_model/README.md`](./ext_model/README.md)
+- 中文: [`ext_model/README-ZH.md`](./ext_model/README-ZH.md)
+
+#### 3.2.2 `ext_process`
+
+扩展侧流程模板组件。
+
+核心能力：
+
+- `Template`
+- `Mode`（`Serial` / `Parallel`）
+- `DefinitionAction`
+- 扩展实现的匹配、合并和执行编排
+
+文档：
+
+- English: [`ext_process/README.md`](./ext_process/README.md)
+- 中文: [`ext_process/README-ZH.md`](./ext_process/README-ZH.md)
+
+#### 3.2.3 `ext_spi`
+
+扩展侧 SPI 模板组件。
+
+核心能力：
+
+- `Template`
+- `Mode`（`First` / `All` / `FirstMatched` / `AllMatched`）
+- `MatchFunc`
+- SPI 实现的匹配和执行模板
+
+文档：
+
+- English: [`ext_spi/README.md`](./ext_spi/README.md)
+- 中文: [`ext_spi/README-ZH.md`](./ext_spi/README-ZH.md)
+
+#### 3.2.4 `ext_interceptor`
+
+扩展侧拦截器模板组件。
+
+核心能力：
+
+- `Handler`
+- `Template`
+- `MatchFunc`
+- 拦截器链的匹配和执行编排
+
+文档：
+
+- English: [`ext_interceptor/README.md`](./ext_interceptor/README.md)
+- 中文: [`ext_interceptor/README-ZH.md`](./ext_interceptor/README-ZH.md)
 
 ### 3.3 集成层
 
