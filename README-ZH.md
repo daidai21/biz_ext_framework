@@ -126,31 +126,55 @@ go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@lates
 
 ## 快速开始
 
-单独使用模块：
+推荐从 `service_manager` 开始，把平台组件和扩展组件统一接入到一个服务运行时里：
 
 ```go
 package main
 
 import (
+    "context"
     "fmt"
 
-    "github.com/daidai21/biz_ext_framework/ext_model"
+    "github.com/daidai21/biz_ext_framework/biz_process"
+    "github.com/daidai21/biz_ext_framework/service_manager"
 )
 
-type User struct {
-    ID   string
-    Name string
-}
-
-func (u User) Key() string { return u.ID }
-
 func main() {
-    users := &ext_model.ExtMap[User]{}
-    users.Set(User{ID: "u1", Name: "Alice"})
-    user, ok := users.Get("u1")
-    fmt.Println(user.Name, ok)
+    manager, err := service_manager.NewServiceManagerBuilder("order-service").
+        WithIdentityScopes("SELLER.SHOP").
+        WithProcess("order_flow", biz_process.Process{
+            Layers: []biz_process.ProcessLayer{
+                {
+                    Name: "prepare",
+                    Nodes: []biz_process.ProcessNode{
+                        biz_process.Task{
+                            Name: "prepare",
+                            Task: func(ctx context.Context) error {
+                                fmt.Println("prepare order")
+                                return nil
+                            },
+                        },
+                    },
+                },
+            },
+        }).
+        Build()
+    if err != nil {
+        panic(err)
+    }
+
+    ctx := context.Background()
+    if err := manager.Start(ctx); err != nil {
+        panic(err)
+    }
+    defer manager.Stop(ctx)
+
+    fmt.Println(manager.IdentityContainer().IsAllowed("SELLER.SHOP.OPERATOR"))
+    fmt.Println(manager.ProcessContainer().Run(ctx, "order_flow"))
 }
 ```
+
+如果只想单独使用某个模块，直接看对应子目录下的 README 即可。
 
 工具使用：
 

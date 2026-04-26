@@ -126,31 +126,55 @@ go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@lates
 
 ## Quick Start
 
-Independent module usage:
+Start with `service_manager` if you want one service runtime that wires platform components and extension components together:
 
 ```go
 package main
 
 import (
+    "context"
     "fmt"
 
-    "github.com/daidai21/biz_ext_framework/ext_model"
+    "github.com/daidai21/biz_ext_framework/biz_process"
+    "github.com/daidai21/biz_ext_framework/service_manager"
 )
 
-type User struct {
-    ID   string
-    Name string
-}
-
-func (u User) Key() string { return u.ID }
-
 func main() {
-    users := &ext_model.ExtMap[User]{}
-    users.Set(User{ID: "u1", Name: "Alice"})
-    user, ok := users.Get("u1")
-    fmt.Println(user.Name, ok)
+    manager, err := service_manager.NewServiceManagerBuilder("order-service").
+        WithIdentityScopes("SELLER.SHOP").
+        WithProcess("order_flow", biz_process.Process{
+            Layers: []biz_process.ProcessLayer{
+                {
+                    Name: "prepare",
+                    Nodes: []biz_process.ProcessNode{
+                        biz_process.Task{
+                            Name: "prepare",
+                            Task: func(ctx context.Context) error {
+                                fmt.Println("prepare order")
+                                return nil
+                            },
+                        },
+                    },
+                },
+            },
+        }).
+        Build()
+    if err != nil {
+        panic(err)
+    }
+
+    ctx := context.Background()
+    if err := manager.Start(ctx); err != nil {
+        panic(err)
+    }
+    defer manager.Stop(ctx)
+
+    fmt.Println(manager.IdentityContainer().IsAllowed("SELLER.SHOP.OPERATOR"))
+    fmt.Println(manager.ProcessContainer().Run(ctx, "order_flow"))
 }
 ```
+
+If you only want a single module, see the README in that module directory directly.
 
 Tool usage:
 
