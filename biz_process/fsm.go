@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -51,9 +52,11 @@ type transitionKey struct {
 type FSM struct {
 	mu sync.Mutex
 
-	state State
-	rules map[transitionKey]Transition
-	exts  []Extension
+	initial     State
+	state       State
+	rules       map[transitionKey]Transition
+	transitions []Transition
+	exts        []Extension
 }
 
 func NewFSM(initial State, transitions []Transition, extensions ...Extension) (*FSM, error) {
@@ -74,9 +77,11 @@ func NewFSM(initial State, transitions []Transition, extensions ...Extension) (*
 	}
 
 	return &FSM{
-		state: initial,
-		rules: rules,
-		exts:  exts,
+		initial:     initial,
+		state:       initial,
+		rules:       rules,
+		transitions: append([]Transition(nil), transitions...),
+		exts:        exts,
 	}, nil
 }
 
@@ -134,4 +139,36 @@ func (f *FSM) onTransitionError(ctx context.Context, from State, to State, event
 	for _, ext := range f.exts {
 		ext.OnTransitionError(ctx, from, to, event, payload, err)
 	}
+}
+
+func (f *FSM) String() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	transitions := make([]fsmTransitionJSON, 0, len(f.transitions))
+	for _, t := range f.transitions {
+		transitions = append(transitions, fsmTransitionJSON{
+			From:      t.From,
+			Event:     t.Event,
+			To:        t.To,
+			HasGuard:  t.Guard != nil,
+			HasAction: t.Action != nil,
+		})
+	}
+	sort.Slice(transitions, func(i, j int) bool {
+		if transitions[i].From != transitions[j].From {
+			return transitions[i].From < transitions[j].From
+		}
+		if transitions[i].Event != transitions[j].Event {
+			return transitions[i].Event < transitions[j].Event
+		}
+		return transitions[i].To < transitions[j].To
+	})
+
+	return mustJSONString(fsmJSON{
+		Type:        "fsm",
+		Initial:     f.initial,
+		Current:     f.state,
+		Transitions: transitions,
+	})
 }

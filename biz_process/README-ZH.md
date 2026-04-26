@@ -49,6 +49,24 @@ type Extension interface {
 - 在状态更新前任一步出错，状态都保持不变。
 - `OnTransitionError` 会在规则缺失、钩子失败、Guard 拒绝、Action 失败时触发。
 
+## ProcessStringer
+
+`biz_process` 新增了统一的 `ProcessStringer` 接口：
+
+```go
+type ProcessStringer interface {
+    String() string
+}
+```
+
+支持标准化 JSON 序列化：
+
+- `Process.String()`：BPMN
+- `biz_process.DAG(nodes).String()`：DAG
+- `(*FSM).String()`：FSM
+
+`task` / `action` / `guard` 这类函数实现不会进入序列化结果，JSON 只保留稳定的结构信息。
+
 
 
 ## BPMN-like 流程编排

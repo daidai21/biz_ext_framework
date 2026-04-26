@@ -49,6 +49,24 @@ Use `NoopExtension` as a default no-op implementation.
 - Any error before state update keeps the original state.
 - `OnTransitionError` is triggered for transition-not-found, hook error, guard rejection, and action error.
 
+## ProcessStringer
+
+`biz_process` now provides a common `ProcessStringer` interface:
+
+```go
+type ProcessStringer interface {
+    String() string
+}
+```
+
+Supported standardized JSON serialization:
+
+- `Process.String()` for BPMN
+- `biz_process.DAG(nodes).String()` for DAG
+- `(*FSM).String()` for FSM
+
+Function fields such as task / action / guard implementations are not serialized. The JSON only keeps stable structural information.
+
 
 
 ## BPMN-like Orchestration
