@@ -1,5 +1,8 @@
 statistics_lines:
-	find . | grep "\.go" | grep -v "_test\.go" | xargs wc -l
+	@core_lines=$$(find . -name '*.go' ! -name '*_test.go' -exec wc -l {} + | awk '{ last = $$1 } END { print last + 0 }'); \
+	total_lines=$$(find . -name '*.go' -exec wc -l {} + | awk '{ last = $$1 } END { print last + 0 }'); \
+	echo "Core Lines: $$core_lines"; \
+	echo "Total Lines: $$total_lines"
 
 unittest:
 	mkdir -p .coverage; \
