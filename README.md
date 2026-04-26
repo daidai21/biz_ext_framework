@@ -50,7 +50,7 @@ All of these modules remain independently usable, while `service_manager` wires 
 
 ## Modules
 
-### Platform Components
+### 1. Platform Components
 
 #### `biz_component`
 
@@ -92,14 +92,14 @@ Docs:
 - [`biz_identity`](./biz_identity/README.md): business identity parsing and validation
 - [`biz_observation`](./biz_observation/README.md): observation helpers
 
-### Extension Components
+### 2. Extension Components
 
 - [`ext_model`](./ext_model/README.md): extension model map abstraction
 - [`ext_process`](./ext_process/README.md): extension process template
 - [`ext_spi`](./ext_spi/README.md): SPI extension template
 - [`ext_interceptor`](./ext_interceptor/README.md): extension interceptor template
 
-### Integration Layer
+### 3. Integration Layer
 
 #### `service_manager`
 

@@ -50,7 +50,7 @@
 
 ## 模块
 
-### 平台组件
+### 1. 平台组件
 
 #### `biz_component`
 
@@ -92,14 +92,14 @@ IOC 风格平台组件容器。
 - [`biz_identity`](./biz_identity/README.md)：业务身份解析与校验
 - [`biz_observation`](./biz_observation/README.md)：观测工具
 
-### 扩展组件
+### 2. 扩展组件
 
 - [`ext_model`](./ext_model/README.md)：扩展模型 Map
 - [`ext_process`](./ext_process/README.md)：扩展流程模板
 - [`ext_spi`](./ext_spi/README.md)：SPI 扩展模板
 - [`ext_interceptor`](./ext_interceptor/README.md)：扩展拦截器模板
 
-### 集成层
+### 3. 集成层
 
 #### `service_manager`
 
