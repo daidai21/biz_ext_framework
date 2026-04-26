@@ -294,3 +294,4 @@ go run ./tools/gen_process_graph -type fsm -input fsm.json
 Tool docs:
 
 - [`tools/gen_process_graph/README.md`](../tools/gen_process_graph/README.md)
+- [`tools/parse_process_graph/README.md`](../tools/parse_process_graph/README.md)
