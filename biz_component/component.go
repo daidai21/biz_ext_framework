@@ -271,20 +271,20 @@ func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 	return value, buildErr
 }
 
-func (c *Container) ServiceObjectAny(name string) (any, bool) {
-	return c.serviceObjectAny(name)
+func (c *Container) GlobalObjectAny(name string) (any, bool) {
+	return c.globalObjectAny(name)
 }
 
 func (c *Container) SessionObjectAny(sessionID, name string) (any, bool) {
 	return c.sessionObjectAny(sessionID, name)
 }
 
-func (c *Container) ServiceObjects() map[string]any {
+func (c *Container) GlobalObjects() map[string]any {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	copied := make(map[string]any, len(c.serviceObjects))
-	for name, value := range c.serviceObjects {
+	copied := make(map[string]any, len(c.globalObjects))
+	for name, value := range c.globalObjects {
 		copied[name] = value
 	}
 	return copied
@@ -302,12 +302,12 @@ func (c *Container) SessionObjects(sessionID string) map[string]any {
 	return copied
 }
 
-func (c *Container) ServiceNames() []string {
+func (c *Container) GlobalNames() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	names := make([]string, 0, len(c.serviceObjects))
-	for name := range c.serviceObjects {
+	names := make([]string, 0, len(c.globalObjects))
+	for name := range c.globalObjects {
 		names = append(names, name)
 	}
 	slices.Sort(names)
@@ -326,10 +326,10 @@ func (c *Container) SessionNames(sessionID string) []string {
 	return names
 }
 
-func (c *Container) DeleteService(name string) {
+func (c *Container) DeleteGlobal(name string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	delete(c.serviceObjects, name)
+	delete(c.globalObjects, name)
 }
 
 func (c *Container) DeleteSessionObject(sessionID, name string) {
@@ -360,7 +360,7 @@ func (c *Container) register(name string, scope Scope, namespace Namespace, prov
 	if provider == nil {
 		return ErrNilProvider
 	}
-	if scope != ServiceScope && scope != SessionScope {
+	if scope != GlobalScope && scope != SessionScope {
 		return fmt.Errorf("unsupported component scope: %q", scope)
 	}
 	if err := namespace.Validate(); err != nil {
@@ -382,8 +382,8 @@ func (c *Container) register(name string, scope Scope, namespace Namespace, prov
 }
 
 func (c *Container) resolveKey(ctx context.Context, name string, scope Scope) (key string, sessionID string, err error) {
-	if scope == ServiceScope {
-		return "service:" + name, "", nil
+	if scope == GlobalScope {
+		return "global:" + name, "", nil
 	}
 
 	session, ok := biz_ctx.BizSessionFromContext(ctx)
@@ -399,11 +399,11 @@ func (c *Container) resolveKey(ctx context.Context, name string, scope Scope) (k
 
 func (c *Container) cachedObjectLocked(scope Scope, sessionID, name string) (any, bool) {
 	switch scope {
-	case ServiceScope:
-		if c.serviceObjects == nil {
+	case GlobalScope:
+		if c.globalObjects == nil {
 			return nil, false
 		}
-		value, ok := c.serviceObjects[name]
+		value, ok := c.globalObjects[name]
 		return value, ok
 	case SessionScope:
 		if c.sessionObjects == nil {
@@ -417,10 +417,10 @@ func (c *Container) cachedObjectLocked(scope Scope, sessionID, name string) (any
 	}
 }
 
-func (c *Container) serviceObjectAny(name string) (any, bool) {
+func (c *Container) globalObjectAny(name string) (any, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.cachedObjectLocked(ServiceScope, "", name)
+	return c.cachedObjectLocked(GlobalScope, "", name)
 }
 
 func (c *Container) sessionObjectAny(sessionID, name string) (any, bool) {
@@ -431,11 +431,11 @@ func (c *Container) sessionObjectAny(sessionID, name string) (any, bool) {
 
 func (c *Container) storeObjectLocked(scope Scope, sessionID, name string, value any) {
 	switch scope {
-	case ServiceScope:
-		if c.serviceObjects == nil {
-			c.serviceObjects = make(map[string]any)
+	case GlobalScope:
+		if c.globalObjects == nil {
+			c.globalObjects = make(map[string]any)
 		}
-		c.serviceObjects[name] = value
+		c.globalObjects[name] = value
 	case SessionScope:
 		if c.sessionObjects == nil {
 			c.sessionObjects = make(map[string]map[string]any)
