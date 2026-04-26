@@ -8,7 +8,6 @@
 ![Service Integration](https://img.shields.io/badge/Service%20Integration-service__manager-2E8B57)
 ![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
-[![Views](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fdaidai21%2Fbiz_ext_framework&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=views&edge_flat=false)](https://hits.seeyoufarm.com)
 
 `biz_ext_framework` is a repository of platform components, extension components, and service-side integration utilities.
 
