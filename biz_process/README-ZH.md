@@ -262,3 +262,17 @@ func main() {
     // 2
 }
 ```
+
+## 画图工具
+
+可以使用 `tools/gen_process_graph` 直接从 JSON 规格生成 Mermaid 或 DOT 依赖图：
+
+```bash
+go run ./tools/gen_process_graph -type bpmn -input process.json
+go run ./tools/gen_process_graph -type dag -input dag.json -format dot -output dag.dot
+go run ./tools/gen_process_graph -type fsm -input fsm.json
+```
+
+工具文档：
+
+- [`tools/gen_process_graph/README.md`](../tools/gen_process_graph/README.md)

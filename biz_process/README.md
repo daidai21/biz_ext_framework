@@ -262,3 +262,17 @@ func main() {
     // 2
 }
 ```
+
+## Graph Tool
+
+Use `tools/gen_process_graph` to generate Mermaid or DOT dependency graphs directly from JSON specs:
+
+```bash
+go run ./tools/gen_process_graph -type bpmn -input process.json
+go run ./tools/gen_process_graph -type dag -input dag.json -format dot -output dag.dot
+go run ./tools/gen_process_graph -type fsm -input fsm.json
+```
+
+Tool docs:
+
+- [`tools/gen_process_graph/README.md`](../tools/gen_process_graph/README.md)
