@@ -4,7 +4,7 @@
 
 The repository is organized around small Go modules. You can either use a module independently or adopt `service_manager` as the integration layer that wires several modules together.
 
-## Highlights
+## 1. Highlights
 
 - IOC-style business component container with `GlobalScope` and `SessionScope`
 - business session context and identity abstractions
@@ -13,7 +13,7 @@ The repository is organized around small Go modules. You can either use a module
 - extension templates for SPI, process pipelines, and interceptors
 - CLI tools for generating and parsing process graphs
 
-## Architecture
+## 2. Architecture
 
 `service_manager` currently integrates both platform components and extension components:
 
@@ -48,11 +48,11 @@ All of these modules remain independently usable, while `service_manager` wires 
                +-------------------+   +-------------------+
 ```
 
-## Modules
+## 3. Modules
 
-### 1. Platform Components
+### 3.1 Platform Components
 
-#### `biz_component`
+#### 3.1.1 `biz_component`
 
 IOC-style platform component container.
 
@@ -69,7 +69,7 @@ Docs:
 - English: [`biz_component/README.md`](./biz_component/README.md)
 - 中文: [`biz_component/README-ZH.md`](./biz_component/README-ZH.md)
 
-#### `biz_process`
+#### 3.1.2 `biz_process`
 
 Platform-side process orchestration primitives.
 
@@ -86,22 +86,22 @@ Docs:
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
-#### Other Platform Components
+#### 3.1.3 Other Platform Components
 
 - [`biz_ctx`](./biz_ctx/README.md): business session context
 - [`biz_identity`](./biz_identity/README.md): business identity parsing and validation
 - [`biz_observation`](./biz_observation/README.md): observation helpers
 
-### 2. Extension Components
+### 3.2 Extension Components
 
 - [`ext_model`](./ext_model/README.md): extension model map abstraction
 - [`ext_process`](./ext_process/README.md): extension process template
 - [`ext_spi`](./ext_spi/README.md): SPI extension template
 - [`ext_interceptor`](./ext_interceptor/README.md): extension interceptor template
 
-### 3. Integration Layer
+### 3.3 Integration Layer
 
-#### `service_manager`
+#### 3.3.1 `service_manager`
 
 Service-side integration layer for container initialization, lifecycle management, observation dependencies, process orchestration, SPI registration, and model filtering.
 
@@ -110,7 +110,7 @@ Docs:
 - English: [`service_manager/README.md`](./service_manager/README.md)
 - 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
 
-## Tools
+## 4. Tools
 
 The repository also provides CLI tools under [`tools/`](./tools/README.md):
 
@@ -124,7 +124,7 @@ go install github.com/daidai21/biz_ext_framework/tools/gen_process_graph@latest
 go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@latest
 ```
 
-## Quick Start
+## 5. Quick Start
 
 Start with `service_manager` if you want one service runtime that wires platform components and extension components together:
 
@@ -183,7 +183,7 @@ gen_process_graph -type bpmn -input process.json
 parse_process_graph -type fsm -input fsm_metrics.jsonl -metrics qps,success_rate,p99
 ```
 
-## Repository Layout
+## 6. Repository Layout
 
 - `biz_component/`
 - `biz_ctx/`
@@ -199,7 +199,7 @@ parse_process_graph -type fsm -input fsm_metrics.jsonl -metrics qps,success_rate
 - `Makefile`
 - `go.mod`
 
-## Development
+## 7. Development
 
 Run tests from a target module directory:
 

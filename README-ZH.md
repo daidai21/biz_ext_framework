@@ -4,7 +4,7 @@
 
 仓库以多个小型 Go module 组织。你可以单独使用某个模块，也可以使用 `service_manager` 作为集成层，把多个模块组合到同一个服务运行时里。
 
-## 亮点
+## 1. 亮点
 
 - 支持 `GlobalScope` / `SessionScope` 的 IOC 业务组件容器
 - 业务 session 上下文与业务身份抽象
@@ -13,7 +13,7 @@
 - SPI、流程模板、拦截器等扩展模板
 - 面向流程图生成和运行时打点解析的 CLI 工具
 
-## 架构
+## 2. 架构
 
 当前 `service_manager` 已集成平台组件与扩展组件：
 
@@ -48,11 +48,11 @@
                +-------------------+   +-------------------+
 ```
 
-## 模块
+## 3. 模块
 
-### 1. 平台组件
+### 3.1 平台组件
 
-#### `biz_component`
+#### 3.1.1 `biz_component`
 
 IOC 风格平台组件容器。
 
@@ -69,7 +69,7 @@ IOC 风格平台组件容器。
 - English: [`biz_component/README.md`](./biz_component/README.md)
 - 中文: [`biz_component/README-ZH.md`](./biz_component/README-ZH.md)
 
-#### `biz_process`
+#### 3.1.2 `biz_process`
 
 平台侧流程编排能力。
 
@@ -86,22 +86,22 @@ IOC 风格平台组件容器。
 - English: [`biz_process/README.md`](./biz_process/README.md)
 - 中文: [`biz_process/README-ZH.md`](./biz_process/README-ZH.md)
 
-#### 其他平台组件
+#### 3.1.3 其他平台组件
 
 - [`biz_ctx`](./biz_ctx/README.md)：业务 session 上下文
 - [`biz_identity`](./biz_identity/README.md)：业务身份解析与校验
 - [`biz_observation`](./biz_observation/README.md)：观测工具
 
-### 2. 扩展组件
+### 3.2 扩展组件
 
 - [`ext_model`](./ext_model/README.md)：扩展模型 Map
 - [`ext_process`](./ext_process/README.md)：扩展流程模板
 - [`ext_spi`](./ext_spi/README.md)：SPI 扩展模板
 - [`ext_interceptor`](./ext_interceptor/README.md)：扩展拦截器模板
 
-### 3. 集成层
+### 3.3 集成层
 
-#### `service_manager`
+#### 3.3.1 `service_manager`
 
 服务侧集成层，负责容器初始化、生命周期管理、观测依赖注入、流程编排、SPI 注册和模型过滤。
 
@@ -110,7 +110,7 @@ IOC 风格平台组件容器。
 - English: [`service_manager/README.md`](./service_manager/README.md)
 - 中文: [`service_manager/README-ZH.md`](./service_manager/README-ZH.md)
 
-## Tools
+## 4. Tools
 
 仓库在 [`tools/`](./tools/README.md) 下提供了 CLI 工具：
 
@@ -124,7 +124,7 @@ go install github.com/daidai21/biz_ext_framework/tools/gen_process_graph@latest
 go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@latest
 ```
 
-## 快速开始
+## 5. 快速开始
 
 推荐从 `service_manager` 开始，把平台组件和扩展组件统一接入到一个服务运行时里：
 
@@ -183,7 +183,7 @@ gen_process_graph -type bpmn -input process.json
 parse_process_graph -type fsm -input fsm_metrics.jsonl -metrics qps,success_rate,p99
 ```
 
-## 仓库结构
+## 6. 仓库结构
 
 - `biz_component/`
 - `biz_ctx/`
@@ -199,7 +199,7 @@ parse_process_graph -type fsm -input fsm_metrics.jsonl -metrics qps,success_rate
 - `Makefile`
 - `go.mod`
 
-## 开发
+## 7. 开发
 
 在目标模块目录下运行测试：
 
