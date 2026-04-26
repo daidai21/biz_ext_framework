@@ -80,6 +80,70 @@ func TestContainerResolveSessionScoped(t *testing.T) {
 	}
 }
 
+func TestContainerResolveSameNameAcrossScopes(t *testing.T) {
+	container := NewContainer()
+	componentGlobalKey := GlobalKey[string]("component")
+	componentSessionKey := SessionKey[string]("component")
+
+	if err := RegisterGlobal(container, componentGlobalKey, func(context.Context, Resolver) (string, error) {
+		return "global-component", nil
+	}); err != nil {
+		t.Fatalf("register global failed: %v", err)
+	}
+	if err := RegisterSession(container, componentSessionKey, func(ctx context.Context, resolver Resolver) (string, error) {
+		globalValue, err := Resolve(ctx, resolver, componentGlobalKey)
+		if err != nil {
+			return "", err
+		}
+		session, _ := biz_ctx.BizSessionFromContext(ctx)
+		return globalValue + ":" + session.BizSessionId(), nil
+	}); err != nil {
+		t.Fatalf("register session failed: %v", err)
+	}
+
+	sessionCtx := biz_ctx.WithBizSession(context.Background(), biz_ctx.NewBizSession("s1"))
+
+	globalValue, err := Resolve(context.Background(), container, componentGlobalKey)
+	if err != nil {
+		t.Fatalf("resolve global failed: %v", err)
+	}
+	if globalValue != "global-component" {
+		t.Fatalf("unexpected global value: %v", globalValue)
+	}
+
+	globalInSession, err := Resolve(sessionCtx, container, componentGlobalKey)
+	if err != nil {
+		t.Fatalf("resolve global in session failed: %v", err)
+	}
+	if globalInSession != "global-component" {
+		t.Fatalf("unexpected global in session value: %v", globalInSession)
+	}
+
+	sessionValue, err := Resolve(sessionCtx, container, componentSessionKey)
+	if err != nil {
+		t.Fatalf("resolve session failed: %v", err)
+	}
+	if sessionValue != "global-component:s1" {
+		t.Fatalf("unexpected session value: %v", sessionValue)
+	}
+
+	value, err := container.ResolveAny(context.Background(), "component")
+	if err != nil {
+		t.Fatalf("resolve any global failed: %v", err)
+	}
+	if value.(string) != "global-component" {
+		t.Fatalf("unexpected resolve any global value: %v", value)
+	}
+
+	value, err = container.ResolveAny(sessionCtx, "component")
+	if err != nil {
+		t.Fatalf("resolve any session failed: %v", err)
+	}
+	if value.(string) != "global-component:s1" {
+		t.Fatalf("unexpected resolve any session value: %v", value)
+	}
+}
+
 func TestContainerResolveGlobalDependency(t *testing.T) {
 	container := NewContainer()
 	configKey := GlobalKey[string]("config")

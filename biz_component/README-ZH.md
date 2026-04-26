@@ -19,6 +19,8 @@
 - 全局对象在同一个容器内只会构建一次
 - Session 级对象会按 session id 分别构建
 - 全局单例统一使用 `GlobalScope` / `GlobalKey` / `RegisterGlobal` / `GlobalObject`
+- 同一个组件名可以同时注册为 `GlobalScope` 和 `SessionScope`
+- `Resolve(ctx, resolver, key)` 会按 `key.Scope()` 精确解析，直接调用 `ResolveAny` 时若上下文里有 session 则优先取 Session 版本
 - Provider 内部通过泛型 helper 解析依赖组件
 - 支持循环依赖检测
 - 支持分层 namespace 依赖约束

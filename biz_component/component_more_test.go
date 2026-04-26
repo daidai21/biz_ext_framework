@@ -126,20 +126,20 @@ func TestPrivateHelpers(t *testing.T) {
 	}
 
 	ctx := withResolverPath(context.Background(), "a")
-	ctx = withResolverFrame(ctx, "b", ServiceNamespace)
-	if path := resolverPathFromContext(ctx); len(path) != 2 || path[0] != "a" || path[1] != "b" {
+	ctx = withResolverFrame(ctx, "b", SessionScope, ServiceNamespace)
+	if path := resolverPathFromContext(ctx); len(path) != 2 || path[0] != "GLOBAL:a" || path[1] != "SESSION:b" {
 		t.Fatalf("unexpected resolver path: %#v", path)
 	}
-	if frames := resolverFramesFromContext(ctx); len(frames) != 2 || frames[1].namespace != ServiceNamespace {
+	if frames := resolverFramesFromContext(ctx); len(frames) != 2 || frames[1].namespace != ServiceNamespace || frames[1].scope != SessionScope {
 		t.Fatalf("unexpected resolver frames: %#v", frames)
 	}
 	if path := resolverPathFromContext(nil); len(path) != 0 {
 		t.Fatalf("expected empty resolver path from nil ctx, got %#v", path)
 	}
-	if !hasCycle(ctx, "a") || hasCycle(ctx, "c") {
+	if !hasCycle(ctx, "a", GlobalScope) || hasCycle(ctx, "a", SessionScope) || hasCycle(ctx, "c", GlobalScope) {
 		t.Fatalf("unexpected cycle detection")
 	}
-	if current, ok := currentResolverFrame(ctx); !ok || current.name != "b" || current.namespace != ServiceNamespace {
+	if current, ok := currentResolverFrame(ctx); !ok || current.name != "b" || current.scope != SessionScope || current.namespace != ServiceNamespace {
 		t.Fatalf("unexpected current resolver frame: %#v %v", current, ok)
 	}
 	if _, ok := currentResolverFrame(context.Background()); ok {

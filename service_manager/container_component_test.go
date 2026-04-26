@@ -125,6 +125,45 @@ func TestComponentContainerRegisterGlobalInNamespace(t *testing.T) {
 	}
 }
 
+func TestComponentContainerResolveSameNameAcrossScopes(t *testing.T) {
+	ctxContainer := NewCtxContainer()
+	if _, err := ctxContainer.Create("s1"); err != nil {
+		t.Fatalf("create session failed: %v", err)
+	}
+
+	container := NewComponentContainer(ctxContainer)
+	if err := container.RegisterGlobalIn("component", biz_component.ServiceNamespace, func(context.Context, biz_component.Resolver) (any, error) {
+		return "global", nil
+	}); err != nil {
+		t.Fatalf("register global failed: %v", err)
+	}
+	if err := container.RegisterSessionIn("component", biz_component.HandlerNamespace, func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
+		value, err := biz_component.Resolve(ctx, resolver, biz_component.GlobalKey[string]("component"))
+		if err != nil {
+			return nil, err
+		}
+		return value + ":session", nil
+	}); err != nil {
+		t.Fatalf("register session failed: %v", err)
+	}
+
+	value, err := container.ResolveAny(context.Background(), "component")
+	if err != nil {
+		t.Fatalf("resolve global failed: %v", err)
+	}
+	if value.(string) != "global" {
+		t.Fatalf("unexpected global value: %v", value)
+	}
+
+	value, err = container.ResolveAnyInSession(context.Background(), "s1", "component")
+	if err != nil {
+		t.Fatalf("resolve session failed: %v", err)
+	}
+	if value.(string) != "global:session" {
+		t.Fatalf("unexpected session value: %v", value)
+	}
+}
+
 func TestComponentContainerRegisterAnyInInvalidNamespace(t *testing.T) {
 	container := NewComponentContainer(nil)
 	err := container.RegisterAnyIn("svc", biz_component.GlobalScope, biz_component.Namespace("bad"), func(context.Context, biz_component.Resolver) (any, error) {

@@ -19,6 +19,8 @@ This directory is an independent Go module.
 - global objects are created once per container instance
 - session-scope objects are created once per session id
 - use `GlobalScope` / `GlobalKey` / `RegisterGlobal` / `GlobalObject` for container-wide singletons
+- the same component name can be registered in both `GlobalScope` and `SessionScope`
+- `Resolve(ctx, resolver, key)` resolves by `key.Scope()`, while bare `ResolveAny` prefers session scope when session context exists
 - providers resolve other components through typed generic helpers
 - circular dependencies are detected
 - layered namespace dependency rules are enforced

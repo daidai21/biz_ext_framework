@@ -90,6 +90,10 @@ type Resolver interface {
 	ResolveAny(ctx context.Context, name string) (any, error)
 }
 
+type scopedResolver interface {
+	ResolveAnyInScope(ctx context.Context, name string, scope Scope) (any, error)
+}
+
 type definition struct {
 	scope     Scope
 	namespace Namespace
@@ -106,6 +110,7 @@ type resolverPathContextKey struct{}
 
 type resolverFrame struct {
 	name      string
+	scope     Scope
 	namespace Namespace
 }
 
@@ -114,7 +119,7 @@ type resolverFrame struct {
 type Container struct {
 	mu sync.Mutex
 
-	definitions map[string]definition
+	definitions map[string]map[Scope]definition
 
 	globalObjects  map[string]any
 	sessionObjects map[string]map[string]any
@@ -122,6 +127,7 @@ type Container struct {
 }
 
 var _ Resolver = (*Container)(nil)
+var _ scopedResolver = (*Container)(nil)
 
 func NewContainer() *Container {
 	return &Container{}
@@ -159,7 +165,15 @@ func Resolve[T any](ctx context.Context, resolver Resolver, key Key[T]) (T, erro
 		return zero, fmt.Errorf("%w: %q", ErrComponentNotFound, key.name)
 	}
 
-	value, err := resolver.ResolveAny(ctx, key.name)
+	var (
+		value any
+		err   error
+	)
+	if scoped, ok := resolver.(scopedResolver); ok {
+		value, err = scoped.ResolveAnyInScope(ctx, key.name, key.scope)
+	} else {
+		value, err = resolver.ResolveAny(ctx, key.name)
+	}
 	if err != nil {
 		return zero, err
 	}
@@ -211,15 +225,23 @@ func (c *Container) RegisterAnyIn(name string, scope Scope, namespace Namespace,
 }
 
 func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
+	return c.resolveAny(ctx, name, "")
+}
+
+func (c *Container) ResolveAnyInScope(ctx context.Context, name string, scope Scope) (any, error) {
+	return c.resolveAny(ctx, name, scope)
+}
+
+func (c *Container) resolveAny(ctx context.Context, name string, scope Scope) (any, error) {
 	if name == "" {
 		return nil, ErrInvalidComponentName
 	}
 
 	c.mu.Lock()
-	definition, ok := c.definitions[name]
-	if !ok {
+	definition, err := c.definitionLocked(ctx, name, scope)
+	if err != nil {
 		c.mu.Unlock()
-		return nil, fmt.Errorf("%w: %q", ErrComponentNotFound, name)
+		return nil, err
 	}
 	if err := validateDependency(ctx, definition.namespace, name); err != nil {
 		c.mu.Unlock()
@@ -237,9 +259,9 @@ func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 		return value, nil
 	}
 
-	if hasCycle(ctx, name) {
+	if hasCycle(ctx, name, definition.scope) {
 		c.mu.Unlock()
-		return nil, fmt.Errorf("%w: %s", ErrCircularDependency, strings.Join(append(resolverPathFromContext(ctx), name), " -> "))
+		return nil, fmt.Errorf("%w: %s", ErrCircularDependency, strings.Join(append(resolverPathFromContext(ctx), componentLabel(name, definition.scope)), " -> "))
 	}
 
 	if inflight := c.getInflightLocked(key); inflight != nil {
@@ -255,7 +277,7 @@ func (c *Container) ResolveAny(ctx context.Context, name string) (any, error) {
 	c.inflight[key] = inflight
 	c.mu.Unlock()
 
-	resolveCtx := withResolverFrame(ctx, name, definition.namespace)
+	resolveCtx := withResolverFrame(ctx, name, definition.scope, definition.namespace)
 	value, buildErr := definition.provider(resolveCtx, c)
 
 	c.mu.Lock()
@@ -371,9 +393,12 @@ func (c *Container) register(name string, scope Scope, namespace Namespace, prov
 	defer c.mu.Unlock()
 
 	if c.definitions == nil {
-		c.definitions = make(map[string]definition)
+		c.definitions = make(map[string]map[Scope]definition)
 	}
-	c.definitions[name] = definition{
+	if c.definitions[name] == nil {
+		c.definitions[name] = make(map[Scope]definition)
+	}
+	c.definitions[name][scope] = definition{
 		scope:     scope,
 		namespace: namespace,
 		provider:  provider,
@@ -455,12 +480,12 @@ func (c *Container) getInflightLocked(key string) *inflightBuild {
 }
 
 func withResolverPath(ctx context.Context, name string) context.Context {
-	return withResolverFrame(ctx, name, HandlerNamespace)
+	return withResolverFrame(ctx, name, GlobalScope, HandlerNamespace)
 }
 
-func withResolverFrame(ctx context.Context, name string, namespace Namespace) context.Context {
+func withResolverFrame(ctx context.Context, name string, scope Scope, namespace Namespace) context.Context {
 	path := resolverFramesFromContext(ctx)
-	path = append(path, resolverFrame{name: name, namespace: namespace})
+	path = append(path, resolverFrame{name: name, scope: scope, namespace: namespace})
 	return context.WithValue(ctx, resolverPathContextKey{}, path)
 }
 
@@ -468,7 +493,7 @@ func resolverPathFromContext(ctx context.Context) []string {
 	frames := resolverFramesFromContext(ctx)
 	path := make([]string, 0, len(frames))
 	for _, frame := range frames {
-		path = append(path, frame.name)
+		path = append(path, componentLabel(frame.name, frame.scope))
 	}
 	return path
 }
@@ -481,10 +506,10 @@ func resolverFramesFromContext(ctx context.Context) []resolverFrame {
 	return append([]resolverFrame(nil), path...)
 }
 
-func hasCycle(ctx context.Context, name string) bool {
-	path := resolverPathFromContext(ctx)
-	for _, item := range path {
-		if item == name {
+func hasCycle(ctx context.Context, name string, scope Scope) bool {
+	frames := resolverFramesFromContext(ctx)
+	for _, item := range frames {
+		if item.name == name && item.scope == scope {
 			return true
 		}
 	}
@@ -517,6 +542,41 @@ func currentResolverFrame(ctx context.Context) (resolverFrame, bool) {
 		return resolverFrame{}, false
 	}
 	return path[len(path)-1], true
+}
+
+func (c *Container) definitionLocked(ctx context.Context, name string, scope Scope) (definition, error) {
+	definitionsByScope, ok := c.definitions[name]
+	if !ok {
+		return definition{}, fmt.Errorf("%w: %q", ErrComponentNotFound, name)
+	}
+	if scope != "" {
+		def, ok := definitionsByScope[scope]
+		if !ok {
+			return definition{}, fmt.Errorf("%w: %q", ErrComponentNotFound, name)
+		}
+		return def, nil
+	}
+	if hasSessionContext(ctx) {
+		if def, ok := definitionsByScope[SessionScope]; ok {
+			return def, nil
+		}
+	}
+	if def, ok := definitionsByScope[GlobalScope]; ok {
+		return def, nil
+	}
+	if def, ok := definitionsByScope[SessionScope]; ok {
+		return def, nil
+	}
+	return definition{}, fmt.Errorf("%w: %q", ErrComponentNotFound, name)
+}
+
+func hasSessionContext(ctx context.Context) bool {
+	session, ok := biz_ctx.BizSessionFromContext(ctx)
+	return ok && session.BizSessionId() != ""
+}
+
+func componentLabel(name string, scope Scope) string {
+	return string(scope) + ":" + name
 }
 
 func canDepend(from Namespace, to Namespace) bool {
