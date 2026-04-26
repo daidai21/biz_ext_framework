@@ -2,6 +2,11 @@
 
 [![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README.md)
 [![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](./unittest_coverage.md)
+![Language](https://img.shields.io/badge/Language-Go-00ADD8?logo=go&logoColor=white)
+![Platform Components](https://img.shields.io/badge/Platform%20Components-biz__xxx-4C8EDA)
+![Extension Components](https://img.shields.io/badge/Extension%20Components-ext__xxx-F28C28)
+![Service Integration](https://img.shields.io/badge/Service%20Integration-service__manager-2E8B57)
+![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
 ![Views](https://visitor-badge.glitch.me/badge?page_id=daidai21.biz_ext_framework&left_text=views)
 
