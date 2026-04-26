@@ -6,8 +6,7 @@ import (
 	"github.com/daidai21/biz_ext_framework/biz_component"
 )
 
-// ComponentContainer manages IOC-style business components for both
-// service scope and session scope.
+// ComponentContainer manages IOC-style business components for global/session singletons.
 type ComponentContainer struct {
 	container    *biz_component.Container
 	ctxContainer *CtxContainer
@@ -32,8 +31,8 @@ func (c *ComponentContainer) RegisterAnyIn(name string, scope biz_component.Scop
 	return c.container.RegisterAnyIn(name, scope, namespace, provider)
 }
 
-func (c *ComponentContainer) RegisterServiceIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
-	return c.container.RegisterAnyIn(name, biz_component.ServiceScope, namespace, provider)
+func (c *ComponentContainer) RegisterGlobalIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
+	return c.container.RegisterAnyIn(name, biz_component.GlobalScope, namespace, provider)
 }
 
 func (c *ComponentContainer) RegisterSessionIn(name string, namespace biz_component.Namespace, provider func(ctx context.Context, resolver biz_component.Resolver) (any, error)) error {
@@ -55,32 +54,32 @@ func (c *ComponentContainer) ResolveAnyInSession(ctx context.Context, sessionID,
 	return c.container.ResolveAny(ctx, name)
 }
 
-func (c *ComponentContainer) ServiceObject(name string) (any, bool) {
-	return c.container.ServiceObjectAny(name)
+func (c *ComponentContainer) GlobalObject(name string) (any, bool) {
+	return c.container.GlobalObjectAny(name)
 }
 
 func (c *ComponentContainer) SessionObject(sessionID, name string) (any, bool) {
 	return c.container.SessionObjectAny(sessionID, name)
 }
 
-func (c *ComponentContainer) ServiceObjects() map[string]any {
-	return c.container.ServiceObjects()
+func (c *ComponentContainer) GlobalObjects() map[string]any {
+	return c.container.GlobalObjects()
 }
 
 func (c *ComponentContainer) SessionObjects(sessionID string) map[string]any {
 	return c.container.SessionObjects(sessionID)
 }
 
-func (c *ComponentContainer) ServiceNames() []string {
-	return c.container.ServiceNames()
+func (c *ComponentContainer) GlobalNames() []string {
+	return c.container.GlobalNames()
 }
 
 func (c *ComponentContainer) SessionNames(sessionID string) []string {
 	return c.container.SessionNames(sessionID)
 }
 
-func (c *ComponentContainer) DeleteService(name string) {
-	c.container.DeleteService(name)
+func (c *ComponentContainer) DeleteGlobal(name string) {
+	c.container.DeleteGlobal(name)
 }
 
 func (c *ComponentContainer) DeleteSessionObject(sessionID, name string) {

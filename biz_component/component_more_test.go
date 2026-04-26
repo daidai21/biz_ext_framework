@@ -10,12 +10,16 @@ import (
 )
 
 func TestKeyAccessors(t *testing.T) {
-	serviceKey := ServiceKey[string]("svc")
+	globalKey := GlobalKey[string]("svc")
+	anotherGlobalKey := GlobalKey[string]("global")
 	sessionKey := SessionKey[int]("sess")
-	explicitKey := ServiceKeyIn[string](ServiceNamespace, "service")
+	explicitKey := GlobalKeyIn[string](ServiceNamespace, "service")
 
-	if serviceKey.Name() != "svc" || serviceKey.Scope() != ServiceScope || serviceKey.Namespace() != HandlerNamespace {
-		t.Fatalf("unexpected service key: %#v", serviceKey)
+	if globalKey.Name() != "svc" || globalKey.Scope() != GlobalScope || globalKey.Namespace() != HandlerNamespace {
+		t.Fatalf("unexpected global key: %#v", globalKey)
+	}
+	if anotherGlobalKey.Name() != "global" || anotherGlobalKey.Scope() != GlobalScope || anotherGlobalKey.Namespace() != HandlerNamespace {
+		t.Fatalf("unexpected second global key: %#v", anotherGlobalKey)
 	}
 	if sessionKey.Name() != "sess" || sessionKey.Scope() != SessionScope || sessionKey.Namespace() != HandlerNamespace {
 		t.Fatalf("unexpected session key: %#v", sessionKey)
@@ -26,7 +30,7 @@ func TestKeyAccessors(t *testing.T) {
 }
 
 func TestRegisterValidation(t *testing.T) {
-	key := ServiceKey[string]("svc")
+	key := GlobalKey[string]("svc")
 
 	if err := Register[string](nil, key, func(context.Context, Resolver) (string, error) { return "", nil }); !errors.Is(err, ErrNilProvider) {
 		t.Fatalf("expected ErrNilProvider for nil container, got %v", err)
@@ -35,31 +39,34 @@ func TestRegisterValidation(t *testing.T) {
 	if err := Register[string](container, key, nil); !errors.Is(err, ErrNilProvider) {
 		t.Fatalf("expected ErrNilProvider for nil provider, got %v", err)
 	}
-	if err := RegisterService(container, SessionKey[string]("bad"), func(context.Context, Resolver) (string, error) { return "", nil }); err == nil {
+	if err := RegisterGlobal(container, SessionKey[string]("bad"), func(context.Context, Resolver) (string, error) { return "", nil }); err == nil {
 		t.Fatal("expected scope mismatch error")
 	}
-	if err := RegisterSession(container, ServiceKey[string]("bad"), func(context.Context, Resolver) (string, error) { return "", nil }); err == nil {
+	if err := RegisterSession(container, GlobalKey[string]("bad"), func(context.Context, Resolver) (string, error) { return "", nil }); err == nil {
 		t.Fatal("expected scope mismatch error")
 	}
-	if err := container.RegisterAny("", ServiceScope, func(context.Context, Resolver) (any, error) { return nil, nil }); !errors.Is(err, ErrInvalidComponentName) {
+	if err := container.RegisterAny("", GlobalScope, func(context.Context, Resolver) (any, error) { return nil, nil }); !errors.Is(err, ErrInvalidComponentName) {
 		t.Fatalf("expected ErrInvalidComponentName, got %v", err)
+	}
+	if err := container.RegisterAny("global", GlobalScope, func(context.Context, Resolver) (any, error) { return nil, nil }); err != nil {
+		t.Fatalf("expected global scope registration success, got %v", err)
 	}
 	if err := container.RegisterAny("svc", Scope("UNKNOWN"), func(context.Context, Resolver) (any, error) { return nil, nil }); err == nil {
 		t.Fatal("expected unsupported scope error")
 	}
-	if err := container.RegisterAnyIn("svc", ServiceScope, Namespace("unknown"), func(context.Context, Resolver) (any, error) { return nil, nil }); !errors.Is(err, ErrInvalidComponentNamespace) {
+	if err := container.RegisterAnyIn("svc", GlobalScope, Namespace("unknown"), func(context.Context, Resolver) (any, error) { return nil, nil }); !errors.Is(err, ErrInvalidComponentNamespace) {
 		t.Fatalf("expected ErrInvalidComponentNamespace, got %v", err)
 	}
 }
 
 func TestResolveAndObjectEdgeCases(t *testing.T) {
-	key := ServiceKey[string]("svc")
+	key := GlobalKey[string]("svc")
 	if _, err := Resolve[string](context.Background(), nil, key); !errors.Is(err, ErrComponentNotFound) {
 		t.Fatalf("expected ErrComponentNotFound, got %v", err)
 	}
 
 	container := NewContainer()
-	if err := container.RegisterAny("svc", ServiceScope, func(context.Context, Resolver) (any, error) {
+	if err := container.RegisterAny("svc", GlobalScope, func(context.Context, Resolver) (any, error) {
 		return 123, nil
 	}); err != nil {
 		t.Fatalf("register any failed: %v", err)
@@ -68,17 +75,14 @@ func TestResolveAndObjectEdgeCases(t *testing.T) {
 	if _, err := Resolve[string](context.Background(), container, key); !errors.Is(err, ErrComponentTypeMismatch) {
 		t.Fatalf("expected ErrComponentTypeMismatch, got %v", err)
 	}
-	if _, ok := ServiceObject[string](nil, key); ok {
-		t.Fatal("expected nil container typed service lookup to fail")
+	if _, ok := GlobalObject[string](nil, GlobalKey[string]("svc")); ok {
+		t.Fatal("expected nil container typed global lookup to fail")
 	}
 	if _, ok := SessionObject[string](nil, "s1", SessionKey[string]("sess")); ok {
 		t.Fatal("expected nil container typed session lookup to fail")
 	}
-	if _, ok := ServiceObject[string](container, key); ok {
-		t.Fatal("expected typed service lookup mismatch to fail")
-	}
-	if value, ok := container.ServiceObjectAny("svc"); !ok || value.(int) != 123 {
-		t.Fatalf("unexpected service object any: %v %v", value, ok)
+	if value, ok := container.GlobalObjectAny("svc"); !ok || value.(int) != 123 {
+		t.Fatalf("unexpected global object any: %v %v", value, ok)
 	}
 	if _, err := container.ResolveAny(context.Background(), ""); !errors.Is(err, ErrInvalidComponentName) {
 		t.Fatalf("expected ErrInvalidComponentName, got %v", err)
@@ -114,8 +118,8 @@ func TestSessionObjectAnyAndClearSession(t *testing.T) {
 func TestPrivateHelpers(t *testing.T) {
 	container := NewContainer()
 
-	if key, sessionID, err := container.resolveKey(context.Background(), "svc", ServiceScope); err != nil || key != "service:svc" || sessionID != "" {
-		t.Fatalf("unexpected service resolve key: %q %q %v", key, sessionID, err)
+	if key, sessionID, err := container.resolveKey(context.Background(), "global", GlobalScope); err != nil || key != "global:global" || sessionID != "" {
+		t.Fatalf("unexpected global resolve key: %q %q %v", key, sessionID, err)
 	}
 	if _, _, err := container.resolveKey(context.Background(), "sess", SessionScope); !errors.Is(err, ErrSessionRequired) {
 		t.Fatalf("expected ErrSessionRequired, got %v", err)
@@ -142,10 +146,10 @@ func TestPrivateHelpers(t *testing.T) {
 		t.Fatal("expected no current resolver frame in empty ctx")
 	}
 
-	container.storeObjectLocked(ServiceScope, "", "svc", "value")
+	container.storeObjectLocked(GlobalScope, "", "svc", "value")
 	container.storeObjectLocked(SessionScope, "s1", "sess", "session-value")
-	if value, ok := container.cachedObjectLocked(ServiceScope, "", "svc"); !ok || value.(string) != "value" {
-		t.Fatalf("unexpected cached service object: %v %v", value, ok)
+	if value, ok := container.cachedObjectLocked(GlobalScope, "", "svc"); !ok || value.(string) != "value" {
+		t.Fatalf("unexpected cached global object: %v %v", value, ok)
 	}
 	if value, ok := container.cachedObjectLocked(SessionScope, "s1", "sess"); !ok || value.(string) != "session-value" {
 		t.Fatalf("unexpected cached session object: %v %v", value, ok)
@@ -196,8 +200,8 @@ func TestNamespaceValidationAndDependencyRules(t *testing.T) {
 
 func TestNamespaceDependencyEnforced(t *testing.T) {
 	container := NewContainer()
-	serviceKey := ServiceKeyIn[string](ServiceNamespace, "service")
-	domainKey := ServiceKeyIn[string](DomainNamespace, "domain")
+	serviceKey := GlobalKeyIn[string](ServiceNamespace, "service")
+	domainKey := GlobalKeyIn[string](DomainNamespace, "domain")
 
 	if err := Register(container, domainKey, func(context.Context, Resolver) (string, error) {
 		return "domain", nil
@@ -207,7 +211,7 @@ func TestNamespaceDependencyEnforced(t *testing.T) {
 	if err := Register(container, serviceKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		return Resolve(ctx, resolver, domainKey)
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 
 	_, err := Resolve(context.Background(), container, serviceKey)
@@ -221,12 +225,12 @@ func TestNamespaceDependencyEnforced(t *testing.T) {
 
 func TestNamespaceDependencyAllowed(t *testing.T) {
 	container := NewContainer()
-	repoKey := ServiceKeyIn[string](RepositoryNamespace, "repo")
-	serviceKey := ServiceKeyIn[string](ServiceNamespace, "service")
-	domainKey := ServiceKeyIn[string](DomainNamespace, "domain")
-	capabilityKey := ServiceKeyIn[string](CapabilityNamespace, "capability")
-	businessKey := ServiceKeyIn[string](BusinessNamespace, "business")
-	handlerKey := ServiceKeyIn[string](HandlerNamespace, "handler")
+	repoKey := GlobalKeyIn[string](RepositoryNamespace, "repo")
+	serviceKey := GlobalKeyIn[string](ServiceNamespace, "service")
+	domainKey := GlobalKeyIn[string](DomainNamespace, "domain")
+	capabilityKey := GlobalKeyIn[string](CapabilityNamespace, "capability")
+	businessKey := GlobalKeyIn[string](BusinessNamespace, "business")
+	handlerKey := GlobalKeyIn[string](HandlerNamespace, "handler")
 
 	for _, item := range []struct {
 		key      Key[string]

@@ -100,7 +100,7 @@ Documentation:
 `biz_component` provides IOC-style business component management:
 
 - `Container`
-- `ServiceScope`
+- `GlobalScope`
 - `SessionScope`
 - `Provider`
 - `Resolver`

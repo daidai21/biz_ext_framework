@@ -25,7 +25,8 @@ var (
 type Scope string
 
 const (
-	ServiceScope Scope = "SERVICE"
+	// GlobalScope is the recommended scope for one container-wide singleton.
+	GlobalScope  Scope = "GLOBAL"
 	SessionScope Scope = "SESSION"
 )
 
@@ -47,14 +48,14 @@ type Key[T any] struct {
 	namespace Namespace
 }
 
-func ServiceKey[T any](name string) Key[T] {
-	return ServiceKeyIn[T](HandlerNamespace, name)
+func GlobalKey[T any](name string) Key[T] {
+	return GlobalKeyIn[T](HandlerNamespace, name)
 }
 
-func ServiceKeyIn[T any](namespace Namespace, name string) Key[T] {
+func GlobalKeyIn[T any](namespace Namespace, name string) Key[T] {
 	return Key[T]{
 		name:      name,
-		scope:     ServiceScope,
+		scope:     GlobalScope,
 		namespace: namespace,
 	}
 }
@@ -108,14 +109,14 @@ type resolverFrame struct {
 	namespace Namespace
 }
 
-// Container is a concurrency-safe IOC container supporting both service-level
+// Container is a concurrency-safe IOC container supporting both global-level
 // and session-level object management.
 type Container struct {
 	mu sync.Mutex
 
 	definitions map[string]definition
 
-	serviceObjects map[string]any
+	globalObjects  map[string]any
 	sessionObjects map[string]map[string]any
 	inflight       map[string]*inflightBuild
 }
@@ -138,9 +139,9 @@ func Register[T any](container *Container, key Key[T], provider Provider[T]) err
 	})
 }
 
-func RegisterService[T any](container *Container, key Key[T], provider Provider[T]) error {
-	if key.scope != ServiceScope {
-		return fmt.Errorf("component %q is not a service scope key", key.name)
+func RegisterGlobal[T any](container *Container, key Key[T], provider Provider[T]) error {
+	if key.scope != GlobalScope {
+		return fmt.Errorf("component %q is not a global scope key", key.name)
 	}
 	return Register(container, key, provider)
 }
@@ -169,12 +170,12 @@ func Resolve[T any](ctx context.Context, resolver Resolver, key Key[T]) (T, erro
 	return typed, nil
 }
 
-func ServiceObject[T any](container *Container, key Key[T]) (T, bool) {
+func GlobalObject[T any](container *Container, key Key[T]) (T, bool) {
 	var zero T
 	if container == nil {
 		return zero, false
 	}
-	value, ok := container.serviceObjectAny(key.name)
+	value, ok := container.globalObjectAny(key.name)
 	if !ok {
 		return zero, false
 	}

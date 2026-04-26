@@ -7,7 +7,7 @@
 ## 核心概念
 
 - `Container`：IOC 容器
-- `ServiceScope`：服务实例级单例对象
+- `GlobalScope`：全局单例对象
 - `SessionScope`：按 `biz_ctx.BizSessionId` 隔离的 Session 级对象
 - `Key[T]`：带类型的组件 key
 - `Provider[T]`：支持依赖解析的泛型延迟构造函数
@@ -16,8 +16,9 @@
 
 ## 行为说明
 
-- 服务级对象在同一个容器内只会构建一次
+- 全局对象在同一个容器内只会构建一次
 - Session 级对象会按 session id 分别构建
+- 全局单例统一使用 `GlobalScope` / `GlobalKey` / `RegisterGlobal` / `GlobalObject`
 - Provider 内部通过泛型 helper 解析依赖组件
 - 支持循环依赖检测
 - 支持分层 namespace 依赖约束
@@ -44,7 +45,7 @@
 - `capability` / `business` 仅可依赖 `domain`、`service`、`repository`、`infra`
 - `handler` 可以依赖所有
 
-如果不显式指定 namespace，`ServiceKey` / `SessionKey` 默认使用 `handler`。
+如果不显式指定 namespace，`GlobalKey` / `SessionKey` 默认使用 `handler`。
 
 ## 示例
 
@@ -61,10 +62,10 @@ import (
 
 func main() {
 	container := biz_component.NewContainer()
-	configKey := biz_component.ServiceKeyIn[string](biz_component.ServiceNamespace, "config")
+	configKey := biz_component.GlobalKeyIn[string](biz_component.ServiceNamespace, "config")
 	componentKey := biz_component.SessionKeyIn[string](biz_component.HandlerNamespace, "order_component")
 
-	_ = biz_component.RegisterService(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+	_ = biz_component.RegisterGlobal(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil
 	})
 	_ = biz_component.RegisterSession(container, componentKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {

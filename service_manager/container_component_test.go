@@ -15,13 +15,13 @@ func TestComponentContainerResolveInSession(t *testing.T) {
 	}
 
 	container := NewComponentContainer(ctxContainer)
-	configKey := biz_component.ServiceKey[string]("config")
+	configKey := biz_component.GlobalKey[string]("config")
 	componentKey := biz_component.SessionKey[string]("component")
 
-	if err := biz_component.RegisterService(container.Container(), configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+	if err := biz_component.RegisterGlobal(container.Container(), configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 	if err := biz_component.RegisterSession(container.Container(), componentKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		cfg, err := biz_component.Resolve(ctx, resolver, configKey)
@@ -46,23 +46,26 @@ func TestComponentContainerResolveInSession(t *testing.T) {
 	}
 }
 
-func TestComponentContainerServiceObject(t *testing.T) {
+func TestComponentContainerGlobalObject(t *testing.T) {
 	container := NewComponentContainer(nil)
-	loggerKey := biz_component.ServiceKey[string]("logger")
+	loggerKey := biz_component.GlobalKey[string]("logger")
 
-	if err := biz_component.RegisterService(container.Container(), loggerKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+	if err := biz_component.RegisterGlobal(container.Container(), loggerKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "logger", nil
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 
 	if _, err := biz_component.Resolve(context.Background(), container.Container(), loggerKey); err != nil {
 		t.Fatalf("resolve failed: %v", err)
 	}
 
-	value, ok := biz_component.ServiceObject(container.Container(), loggerKey)
+	value, ok := biz_component.GlobalObject(container.Container(), loggerKey)
 	if !ok || value != "logger" {
-		t.Fatalf("unexpected service object: %v %v", value, ok)
+		t.Fatalf("unexpected global object: %v %v", value, ok)
+	}
+	if value, ok := container.GlobalObject("logger"); !ok || value.(string) != "logger" {
+		t.Fatalf("unexpected wrapper global object: %v %v", value, ok)
 	}
 }
 
@@ -73,15 +76,15 @@ func TestComponentContainerRegisterInNamespace(t *testing.T) {
 	}
 
 	container := NewComponentContainer(ctxContainer)
-	if err := container.RegisterServiceIn("repo", biz_component.RepositoryNamespace, func(context.Context, biz_component.Resolver) (any, error) {
+	if err := container.RegisterGlobalIn("repo", biz_component.RepositoryNamespace, func(context.Context, biz_component.Resolver) (any, error) {
 		return "repo", nil
 	}); err != nil {
-		t.Fatalf("register repo failed: %v", err)
+		t.Fatalf("register global repo failed: %v", err)
 	}
-	if err := container.RegisterServiceIn("svc", biz_component.ServiceNamespace, func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
+	if err := container.RegisterGlobalIn("svc", biz_component.ServiceNamespace, func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
 		return resolver.ResolveAny(ctx, "repo")
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 	if err := container.RegisterSessionIn("handler", biz_component.HandlerNamespace, func(ctx context.Context, resolver biz_component.Resolver) (any, error) {
 		value, err := resolver.ResolveAny(ctx, "svc")
@@ -102,9 +105,29 @@ func TestComponentContainerRegisterInNamespace(t *testing.T) {
 	}
 }
 
+func TestComponentContainerRegisterGlobalInNamespace(t *testing.T) {
+	container := NewComponentContainer(nil)
+	if err := container.RegisterGlobalIn("repo", biz_component.RepositoryNamespace, func(context.Context, biz_component.Resolver) (any, error) {
+		return "repo", nil
+	}); err != nil {
+		t.Fatalf("register global repo failed: %v", err)
+	}
+
+	value, err := container.ResolveAny(context.Background(), "repo")
+	if err != nil {
+		t.Fatalf("resolve global failed: %v", err)
+	}
+	if value.(string) != "repo" {
+		t.Fatalf("unexpected global value: %v", value)
+	}
+	if names := container.GlobalNames(); len(names) != 1 || names[0] != "repo" {
+		t.Fatalf("unexpected global names: %v", names)
+	}
+}
+
 func TestComponentContainerRegisterAnyInInvalidNamespace(t *testing.T) {
 	container := NewComponentContainer(nil)
-	err := container.RegisterAnyIn("svc", biz_component.ServiceScope, biz_component.Namespace("bad"), func(context.Context, biz_component.Resolver) (any, error) {
+	err := container.RegisterAnyIn("svc", biz_component.GlobalScope, biz_component.Namespace("bad"), func(context.Context, biz_component.Resolver) (any, error) {
 		return "x", nil
 	})
 	if !errors.Is(err, biz_component.ErrInvalidComponentNamespace) {

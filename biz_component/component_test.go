@@ -8,16 +8,16 @@ import (
 	"github.com/daidai21/biz_ext_framework/biz_ctx"
 )
 
-func TestContainerResolveServiceSingleton(t *testing.T) {
+func TestContainerResolveGlobalSingleton(t *testing.T) {
 	container := NewContainer()
 	buildCount := 0
-	loggerKey := ServiceKey[string]("logger")
+	loggerKey := GlobalKey[string]("logger")
 
-	if err := RegisterService(container, loggerKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, loggerKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		buildCount++
 		return "logger-instance", nil
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 
 	first, err := Resolve(context.Background(), container, loggerKey)
@@ -30,10 +30,13 @@ func TestContainerResolveServiceSingleton(t *testing.T) {
 	}
 
 	if first != second {
-		t.Fatalf("expected singleton service object")
+		t.Fatalf("expected singleton global object")
 	}
 	if buildCount != 1 {
 		t.Fatalf("expected build count 1, got %d", buildCount)
+	}
+	if value, ok := GlobalObject(container, loggerKey); !ok || value != "logger-instance" {
+		t.Fatalf("unexpected typed global object: %v %v", value, ok)
 	}
 }
 
@@ -77,24 +80,24 @@ func TestContainerResolveSessionScoped(t *testing.T) {
 	}
 }
 
-func TestContainerResolveServiceDependency(t *testing.T) {
+func TestContainerResolveGlobalDependency(t *testing.T) {
 	container := NewContainer()
-	configKey := ServiceKey[string]("config")
-	clientKey := ServiceKey[string]("client")
+	configKey := GlobalKey[string]("config")
+	clientKey := GlobalKey[string]("client")
 
-	if err := RegisterService(container, configKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, configKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		return "cfg", nil
 	}); err != nil {
-		t.Fatalf("register config failed: %v", err)
+		t.Fatalf("register global config failed: %v", err)
 	}
-	if err := RegisterService(container, clientKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, clientKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		cfg, err := Resolve(ctx, resolver, configKey)
 		if err != nil {
 			return "", err
 		}
 		return "client:" + cfg, nil
 	}); err != nil {
-		t.Fatalf("register client failed: %v", err)
+		t.Fatalf("register global client failed: %v", err)
 	}
 
 	value, err := Resolve(context.Background(), container, clientKey)
@@ -124,16 +127,16 @@ func TestContainerResolveSessionRequiresContext(t *testing.T) {
 
 func TestContainerResolveCircularDependency(t *testing.T) {
 	container := NewContainer()
-	aKey := ServiceKey[string]("a")
-	bKey := ServiceKey[string]("b")
+	aKey := GlobalKey[string]("a")
+	bKey := GlobalKey[string]("b")
 
-	if err := RegisterService(container, aKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, aKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		_, err := Resolve(ctx, resolver, bKey)
 		return "", err
 	}); err != nil {
 		t.Fatalf("register a failed: %v", err)
 	}
-	if err := RegisterService(container, bKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, bKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		_, err := Resolve(ctx, resolver, aKey)
 		return "", err
 	}); err != nil {
@@ -148,13 +151,13 @@ func TestContainerResolveCircularDependency(t *testing.T) {
 
 func TestContainerObjectManagement(t *testing.T) {
 	container := NewContainer()
-	serviceKey := ServiceKey[string]("svc")
+	globalKey := GlobalKey[string]("svc")
 	sessionKey := SessionKey[string]("session_obj")
 
-	if err := RegisterService(container, serviceKey, func(ctx context.Context, resolver Resolver) (string, error) {
+	if err := RegisterGlobal(container, globalKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		return "svc-value", nil
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 	if err := RegisterSession(container, sessionKey, func(ctx context.Context, resolver Resolver) (string, error) {
 		return "session-value", nil
@@ -163,39 +166,39 @@ func TestContainerObjectManagement(t *testing.T) {
 	}
 
 	ctx := biz_ctx.WithBizSession(context.Background(), biz_ctx.NewBizSession("s1"))
-	if _, err := Resolve(context.Background(), container, serviceKey); err != nil {
-		t.Fatalf("resolve service failed: %v", err)
+	if _, err := Resolve(context.Background(), container, globalKey); err != nil {
+		t.Fatalf("resolve global failed: %v", err)
 	}
 	if _, err := Resolve(ctx, container, sessionKey); err != nil {
 		t.Fatalf("resolve session failed: %v", err)
 	}
 
-	if len(container.ServiceObjects()) != 1 {
-		t.Fatalf("expected 1 service object")
+	if len(container.GlobalObjects()) != 1 {
+		t.Fatalf("expected 1 global object")
 	}
 	if len(container.SessionObjects("s1")) != 1 {
 		t.Fatalf("expected 1 session object")
 	}
-	if len(container.ServiceNames()) != 1 || container.ServiceNames()[0] != "svc" {
-		t.Fatalf("unexpected service names: %v", container.ServiceNames())
+	if len(container.GlobalNames()) != 1 || container.GlobalNames()[0] != "svc" {
+		t.Fatalf("unexpected global names: %v", container.GlobalNames())
 	}
 	if len(container.SessionNames("s1")) != 1 || container.SessionNames("s1")[0] != "session_obj" {
 		t.Fatalf("unexpected session names: %v", container.SessionNames("s1"))
 	}
 
-	serviceValue, ok := ServiceObject(container, serviceKey)
-	if !ok || serviceValue != "svc-value" {
-		t.Fatalf("unexpected typed service object: %v %v", serviceValue, ok)
+	globalValue, ok := GlobalObject(container, globalKey)
+	if !ok || globalValue != "svc-value" {
+		t.Fatalf("unexpected typed global object: %v %v", globalValue, ok)
 	}
 	sessionValue, ok := SessionObject(container, "s1", sessionKey)
 	if !ok || sessionValue != "session-value" {
 		t.Fatalf("unexpected typed session object: %v %v", sessionValue, ok)
 	}
 
-	container.DeleteService("svc")
+	container.DeleteGlobal("svc")
 	container.DeleteSessionObject("s1", "session_obj")
-	if len(container.ServiceObjects()) != 0 {
-		t.Fatalf("expected no service objects")
+	if len(container.GlobalObjects()) != 0 {
+		t.Fatalf("expected no global objects")
 	}
 	if len(container.SessionObjects("s1")) != 0 {
 		t.Fatalf("expected no session objects")

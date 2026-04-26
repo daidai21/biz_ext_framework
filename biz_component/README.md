@@ -7,7 +7,7 @@ This directory is an independent Go module.
 ## Core Concepts
 
 - `Container`: the IOC container
-- `ServiceScope`: service instance level singleton objects
+- `GlobalScope`: global singleton objects
 - `SessionScope`: session level objects isolated by `biz_ctx.BizSessionId`
 - `Key[T]`: typed component key
 - `Provider[T]`: typed lazy object constructor with dependency resolution support
@@ -16,8 +16,9 @@ This directory is an independent Go module.
 
 ## Behavior
 
-- service-scope objects are created once per container instance
+- global objects are created once per container instance
 - session-scope objects are created once per session id
+- use `GlobalScope` / `GlobalKey` / `RegisterGlobal` / `GlobalObject` for container-wide singletons
 - providers resolve other components through typed generic helpers
 - circular dependencies are detected
 - layered namespace dependency rules are enforced
@@ -44,7 +45,7 @@ Dependency rules:
 - `capability` / `business` can only depend on `domain`, `service`, `repository`, and `infra`
 - `handler` can depend on all namespaces
 
-If namespace is not specified explicitly, `ServiceKey` / `SessionKey` default to `handler`.
+If namespace is not specified explicitly, `GlobalKey` / `SessionKey` default to `handler`.
 
 ## Example
 
@@ -61,10 +62,10 @@ import (
 
 func main() {
 	container := biz_component.NewContainer()
-	configKey := biz_component.ServiceKeyIn[string](biz_component.ServiceNamespace, "config")
+	configKey := biz_component.GlobalKeyIn[string](biz_component.ServiceNamespace, "config")
 	componentKey := biz_component.SessionKeyIn[string](biz_component.HandlerNamespace, "order_component")
 
-	_ = biz_component.RegisterService(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
+	_ = biz_component.RegisterGlobal(container, configKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {
 		return "cfg", nil
 	})
 	_ = biz_component.RegisterSession(container, componentKey, func(ctx context.Context, resolver biz_component.Resolver) (string, error) {

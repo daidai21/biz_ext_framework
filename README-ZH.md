@@ -99,7 +99,7 @@
 `biz_component` 提供 IOC 风格的业务组件管理：
 
 - `Container`
-- `ServiceScope`
+- `GlobalScope`
 - `SessionScope`
 - `Provider`
 - `Resolver`

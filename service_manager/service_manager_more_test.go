@@ -21,10 +21,10 @@ func TestComponentContainerWrapperMethods(t *testing.T) {
 	}
 
 	container := NewComponentContainer(ctxContainer)
-	if err := container.RegisterAny("svc", biz_component.ServiceScope, func(context.Context, biz_component.Resolver) (any, error) {
+	if err := container.RegisterAny("svc", biz_component.GlobalScope, func(context.Context, biz_component.Resolver) (any, error) {
 		return "service-value", nil
 	}); err != nil {
-		t.Fatalf("register service failed: %v", err)
+		t.Fatalf("register global failed: %v", err)
 	}
 	if err := container.RegisterAny("sess", biz_component.SessionScope, func(ctx context.Context, _ biz_component.Resolver) (any, error) {
 		session, ok := ctxContainer.SessionFromContext(ctx)
@@ -37,7 +37,7 @@ func TestComponentContainerWrapperMethods(t *testing.T) {
 	}
 
 	if value, err := container.ResolveAny(context.Background(), "svc"); err != nil || value.(string) != "service-value" {
-		t.Fatalf("unexpected service resolve result: %v %v", value, err)
+		t.Fatalf("unexpected global resolve result: %v %v", value, err)
 	}
 	if value, err := container.ResolveAnyInSession(context.Background(), "s1", "sess"); err != nil || value.(string) != "session:s1" {
 		t.Fatalf("unexpected session resolve result: %v %v", value, err)
@@ -46,27 +46,27 @@ func TestComponentContainerWrapperMethods(t *testing.T) {
 		t.Fatalf("expected ErrContainerNotFound, got %v", err)
 	}
 
-	if value, ok := container.ServiceObject("svc"); !ok || value.(string) != "service-value" {
-		t.Fatalf("unexpected service object: %v %v", value, ok)
+	if value, ok := container.GlobalObject("svc"); !ok || value.(string) != "service-value" {
+		t.Fatalf("unexpected global object: %v %v", value, ok)
 	}
 	if value, ok := container.SessionObject("s1", "sess"); !ok || value.(string) != "session:s1" {
 		t.Fatalf("unexpected session object: %v %v", value, ok)
 	}
-	if len(container.ServiceObjects()) != 1 || len(container.SessionObjects("s1")) != 1 {
+	if len(container.GlobalObjects()) != 1 || len(container.SessionObjects("s1")) != 1 {
 		t.Fatalf("unexpected object snapshots")
 	}
-	if len(container.ServiceNames()) != 1 || container.ServiceNames()[0] != "svc" {
-		t.Fatalf("unexpected service names: %v", container.ServiceNames())
+	if len(container.GlobalNames()) != 1 || container.GlobalNames()[0] != "svc" {
+		t.Fatalf("unexpected global names: %v", container.GlobalNames())
 	}
 	if len(container.SessionNames("s1")) != 1 || container.SessionNames("s1")[0] != "sess" {
 		t.Fatalf("unexpected session names: %v", container.SessionNames("s1"))
 	}
 
-	container.DeleteService("svc")
+	container.DeleteGlobal("svc")
 	container.DeleteSessionObject("s1", "sess")
 	container.ClearSession("s1")
-	if _, ok := container.ServiceObject("svc"); ok {
-		t.Fatal("expected deleted service object")
+	if _, ok := container.GlobalObject("svc"); ok {
+		t.Fatal("expected deleted global object")
 	}
 	if _, ok := container.SessionObject("s1", "sess"); ok {
 		t.Fatal("expected deleted session object")
