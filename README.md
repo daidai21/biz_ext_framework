@@ -1,5 +1,10 @@
 # biz_ext_framework
 
+[![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README.md)
+[![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](./unittest_coverage.md)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
+![Views](https://visitor-badge.glitch.me/badge?page_id=daidai21.biz_ext_framework&left_text=views)
+
 `biz_ext_framework` is a repository of platform components, extension components, and service-side integration utilities.
 
 The repository is organized around small Go modules. You can either use a module independently or adopt `service_manager` as the integration layer that wires several modules together.

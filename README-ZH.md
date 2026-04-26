@@ -1,5 +1,10 @@
 # biz_ext_framework
 
+[![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README-ZH.md)
+[![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](./unittest_coverage.md)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
+![Views](https://visitor-badge.glitch.me/badge?page_id=daidai21.biz_ext_framework&left_text=views)
+
 `biz_ext_framework` 是一个沉淀平台组件、扩展组件和服务侧集成能力的仓库。
 
 仓库以多个小型 Go module 组织。你可以单独使用某个模块，也可以使用 `service_manager` 作为集成层，把多个模块组合到同一个服务运行时里。
