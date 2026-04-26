@@ -1,13 +1,14 @@
 # biz_ext_framework
 
-[![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README-ZH.md)
+[![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README.md)
 [![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](./unittest_coverage.md)
 ![Language](https://img.shields.io/badge/Language-Go-00ADD8?logo=go&logoColor=white)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
+![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
+
 ![Platform Components](https://img.shields.io/badge/Platform%20Components-biz__xxx-4C8EDA)
 ![Extension Components](https://img.shields.io/badge/Extension%20Components-ext__xxx-F28C28)
 ![Service Integration](https://img.shields.io/badge/Service%20Integration-service__manager-2E8B57)
-![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
 
 `biz_ext_framework` 是一个沉淀平台组件、扩展组件和服务侧集成能力的仓库。
 
@@ -237,6 +238,13 @@ go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@lates
 ## 5. 快速开始
 
 推荐从 `service_manager` 开始，把平台组件和扩展组件统一接入到一个服务运行时里：
+
+先安装依赖：
+
+```bash
+go get github.com/daidai21/biz_ext_framework/service_manager
+go get github.com/daidai21/biz_ext_framework/biz_process
+```
 
 ```go
 package main

@@ -3,11 +3,12 @@
 [![Read the Docs](https://img.shields.io/badge/Read%20the%20Docs-README-8CA1AF?logo=readthedocs&logoColor=white)](./README.md)
 [![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](./unittest_coverage.md)
 ![Language](https://img.shields.io/badge/Language-Go-00ADD8?logo=go&logoColor=white)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
+![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
+
 ![Platform Components](https://img.shields.io/badge/Platform%20Components-biz__xxx-4C8EDA)
 ![Extension Components](https://img.shields.io/badge/Extension%20Components-ext__xxx-F28C28)
 ![Service Integration](https://img.shields.io/badge/Service%20Integration-service__manager-2E8B57)
-![CLI Tools](https://img.shields.io/badge/CLI%20Tools-tools-6A5ACD)
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=daidai21.biz_ext_framework&left_text=visitors)
 
 `biz_ext_framework` is a repository of platform components, extension components, and service-side integration utilities.
 
@@ -237,6 +238,13 @@ go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@lates
 ## 5. Quick Start
 
 Start with `service_manager` if you want one service runtime that wires platform components and extension components together:
+
+Install dependencies first:
+
+```bash
+go get github.com/daidai21/biz_ext_framework/service_manager
+go get github.com/daidai21/biz_ext_framework/biz_process
+```
 
 ```go
 package main
