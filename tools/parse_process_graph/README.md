@@ -4,6 +4,12 @@
 
 ## Usage
 
+Install:
+
+```bash
+go install github.com/daidai21/biz_ext_framework/tools/parse_process_graph@latest
+```
+
 ```bash
 go run ./tools/parse_process_graph -type bpmn -input metrics.jsonl
 go run ./tools/parse_process_graph -type dag -input dag_metrics.jsonl -format dot -output dag.dot
