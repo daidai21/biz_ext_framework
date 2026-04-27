@@ -38,3 +38,25 @@ unittest:
 	echo "## Overall" >> $$report; \
 	echo "" >> $$report; \
 	echo "- Project coverage total: $$overall_coverage" >> $$report
+
+benchmark:
+	for module in $$(find . -maxdepth 2 -name go.mod | sort | xargs -n1 dirname); do \
+		if [ "$$module" = "." ]; then \
+			continue; \
+		fi; \
+		if [ -n "$$(find $$module -name '*.go' -print -quit)" ]; then \
+			report=$$(pwd)/$$module/benchmark.md; \
+			echo "# Benchmark" > $$report; \
+			echo "" >> $$report; \
+			echo "Generated at: $$(date '+%Y-%m-%d %H:%M:%S %z')" >> $$report; \
+			echo "" >> $$report; \
+			echo "Command: \`go test -run '^$$' -bench . -benchmem -count=1 ./...\`" >> $$report; \
+			echo "" >> $$report; \
+			echo "\`\`\`" >> $$report; \
+			(cd $$module && go test -run '^$$' -bench . -benchmem -count=1 ./...) >> $$report 2>&1 || exit 1; \
+			echo "\`\`\`" >> $$report; \
+			echo "==> $$module => $$report"; \
+		else \
+			echo "skip $$module (no packages)"; \
+		fi; \
+	done
